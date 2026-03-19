@@ -1,3 +1,12 @@
+you can ignore all this
+feed Claude the INIT and go fkn ham
+
+
+
+
+
+
+
 # THE_FACTORY
 
 THE_FACTORY is a reusable operating system for software projects run with specialized AI agents.
