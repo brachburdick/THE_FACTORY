@@ -1,0 +1,13 @@
+# Ignore everything by default
+*
+
+# Keep the repo metadata file itself
+!.gitignore
+
+# Keep the six handoff docs at the root
+!README.md
+!INIT.md
+!OPERATOR_PROTOCOL.md
+!IMPLEMENTATION_PROMPT.md
+!PROTOCOL_REVIEW_PROMPT.md
+!PROTOCOL_IMPROVEMENTS.md
