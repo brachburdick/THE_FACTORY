@@ -11,3 +11,7 @@
 !IMPLEMENTATION_PROMPT.md
 !PROTOCOL_REVIEW_PROMPT.md
 !PROTOCOL_IMPROVEMENTS.md
+
+
+# Ignore the projects directory and its contents
+/projects/
