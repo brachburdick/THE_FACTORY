@@ -16,7 +16,11 @@
 <!-- FRICTION = protocol is correct but too slow/annoying -->
 <!-- IDEA = potential improvement, not yet validated by failure -->
 
-_(No pending items — all observations processed in v1.9 migration.)_
+- [GAP] Telemetry files (runs.jsonl, incidents.jsonl, scorecards.jsonl) are empty scaffolding. No baselines exist yet. First 20 real tasks should establish baseline metrics before any protocol review uses them as evidence. (from: v1.9.2 rollout)
+
+- [GAP] Eval cases in .agent/evals/ (conventions/, flows/, handoffs/, skills/) have not been updated to cover v1.9.2 additions — new schemas (scorecard-record.json, run-record.json, incident-record.json), updated templates (plan.md, validator-verdict.md), and new template fields (PDR refs, evidence refs, dispatch status) lack eval coverage. (from: v1.9.2 rollout)
+
+- [IDEA] Variant testing section in .agent/evals/manifest.md is empty scaffolding. No value until a workflow change needs A/B comparison. Consider removing if unused after 2 protocol review cycles. (from: v1.9.2 rollout)
 
 ## Deferred
 

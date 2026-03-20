@@ -10,7 +10,7 @@
 ## Context
 
 You are scaffolding or syncing a project's agent infrastructure to align with
-the v1.9.1 operating model defined in `CLAUDE.md`.
+the v1.9.2 operating model defined in `CLAUDE.md`.
 
 You own agent infrastructure only. You do not modify application source code.
 

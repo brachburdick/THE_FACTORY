@@ -2,7 +2,7 @@
 
 THE_FACTORY is a reusable operating system for software projects run with AI agents.
 
-## Operating Model (v1.9.1)
+## Operating Model (v1.9.2)
 
 One default operator agent. Specialist behavior via skills, not standing roles.
 
@@ -38,7 +38,7 @@ THE_FACTORY/
 │   ├── incidents.jsonl    ← structured incident log
 │   ├── reviews/           ← experiential review scorecards
 │   ├── evals/             ← eval suite + manifest
-│   ├── schemas/           ← JSON schemas (handoff envelope, run, incident)
+│   ├── schemas/           ← JSON schemas (handoff envelope, run, incident, scorecard)
 │   └── metrics/           ← metric definitions and targets
 ├── .claude/skills/        ← flow skills (debug, feature, refactor)
 ├── skills/                ← portfolio-level domain skills
@@ -76,6 +76,6 @@ Both load simultaneously. The flow drives the steps; the domain informs decision
 
 ## Version
 
-- **Current:** v1.9.1 (2026-03-20)
-- **Previous:** v1.8 archived at `support/v1.8/`
+- **Current:** v1.9.2 (2026-03-20)
+- **Previous:** v1.9.1 → v1.9 → v1.8 (archived at `support/v1.8/`)
 - **Migration docs:** `support/v1.9/`

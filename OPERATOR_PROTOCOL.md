@@ -1,6 +1,6 @@
 # Operator Protocol
 
-> **Version:** 1.9.1
+> **Version:** 1.9.2
 > **Last reviewed:** 2026-03-20
 > **Improvements backlog:** See `PROTOCOL_IMPROVEMENTS.md`
 
@@ -228,6 +228,6 @@ Fields: `id`, `taskType`, `flowPhase`, `status`, `summary`, `blockers`, `updated
 
 ## 8. Version
 
-- **Current:** v1.9.1 (2026-03-20)
+- **Current:** v1.9.2 (2026-03-20)
 - **Canonical model:** `CLAUDE.md`
-- **Previous:** v1.8 archived at `support/v1.8/`
+- **Previous:** v1.9.1 → v1.9 → v1.8 (archived at `support/v1.8/`)
