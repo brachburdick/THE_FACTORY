@@ -5,48 +5,61 @@
 >
 > **1. Batch review (periodic):** When `PROTOCOL_IMPROVEMENTS.md` has accumulated enough entries.
 >
-> **2. Project-specific review (on demand):** When a project's
-> `/{project}/docs/agents/PROTOCOL_IMPROVEMENT.md` has entries to process.
+> **2. Evidence-driven review:** When run records, incident logs, or eval results show
+> a pattern worth addressing.
 >
-> Start a fresh Architect-level conversation. Load these files **in order**:
+> Start a fresh conversation. Load these files **in order**:
 > 1. `PROTOCOL_REVIEW_PROMPT.md` (this file)
-> 2. `OPERATOR_PROTOCOL.md`
-> 3. `PROTOCOL_IMPROVEMENTS.md`
-> 4. Root `templates/` files and any preamble files referenced by the pending entries
-> 5. *(Project-specific review only)* `/{project}/docs/agents/PROTOCOL_IMPROVEMENT.md`
+> 2. `CLAUDE.md`
+> 3. `OPERATOR_PROTOCOL.md`
+> 4. `PROTOCOL_IMPROVEMENTS.md`
+> 5. Relevant run records from `.agent/runs.jsonl` and incident logs from `.agent/incidents.jsonl`
+> 6. Relevant eval results from `.agent/evals/`
 
 ---
 
 ## Your Role
 
-You are an Architect agent performing a protocol review. Read the improvements backlog,
-diagnose root causes, and propose specific changes to the Operator Protocol and/or preambles.
-Apply targeted fixes based on observed failures — do not redesign the system.
+You are performing a protocol review. Read the evidence, diagnose root causes, and propose
+specific changes to the operating model. Apply targeted fixes based on observed failures —
+do not redesign the system.
 
 ## What You Receive
 
-- `OPERATOR_PROTOCOL.md` — The current protocol
-- `PROTOCOL_IMPROVEMENTS.md` — Root-level backlog (`Pending`, `Deferred`, and `Resolved`)
-- Relevant preamble files (if specific roles are affected)
-- *(If project-specific)* `/{project}/docs/agents/PROTOCOL_IMPROVEMENT.md`
+- `CLAUDE.md` — the runtime constitution
+- `OPERATOR_PROTOCOL.md` — the governance layer
+- `PROTOCOL_IMPROVEMENTS.md` — observation backlog
+- Run records and incident logs (structured data)
+- Eval results (if relevant)
 
 ## Your Process
 
-### Step 0: Ingest Project-Specific Improvements (If Applicable)
+### Step 1: Gather Evidence
 
-Read the project's `docs/agents/PROTOCOL_IMPROVEMENT.md`. Classify each entry:
-- **Applies universally** → Proceed to Step 1
-- **Project-specific only** → Flag to operator. These stay as project-level rules, not root protocol.
+Read all inputs. Identify which evidence sources are available:
+- Backlog entries from `PROTOCOL_IMPROVEMENTS.md`
+- Run records from `.agent/runs.jsonl`
+- Incident logs from `.agent/incidents.jsonl`
+- Review scorecards from `.agent/reviews/scorecards.jsonl`
+- Eval results from `.agent/evals/`
 
-Present classification before proceeding.
+Present an evidence summary before proposing changes.
 
-### Step 1: Triage
+### Step 2: Classify Root Causes
 
-Read all entries to process (project-specific from Step 0 + root `## Pending` if batch review).
+For each issue, classify the root cause:
 
-Treat `## Deferred` as already-reviewed backlog. Do not re-open deferred items unless the operator asks.
+| Classification | Meaning |
+|---------------|---------|
+| `SPECIFICATION_OR_SYSTEM_DESIGN` | The intent, spec, or architecture was wrong or incomplete |
+| `HANDOFF_OR_ALIGNMENT` | The handoff between stages lost information or introduced drift |
+| `VERIFICATION_OR_TERMINATION` | The verification step missed the problem or the loop didn't terminate |
 
-Classify by priority:
+Multiple entries often share one underlying cause. Group them.
+
+Present classifications. Operator may adjust.
+
+### Step 3: Triage by Priority
 
 | Priority | Criteria |
 |----------|----------|
@@ -55,74 +68,63 @@ Classify by priority:
 | **P2 — Improve** | FRICTION: protocol works but is unnecessarily slow |
 | **P3 — Consider** | IDEA: not yet validated by a real failure |
 
-Present prioritized list before proposing changes.
+### Step 4: Apply Scaffold-First Bias
 
-### Step 2: Group by Root Cause
+Before proposing any change, evaluate fixes in this order:
+1. **Schema fix** — can the artifact schema prevent this?
+2. **Hook or validation fix** — can an automated check catch this?
+3. **Checklist or gate fix** — can a flow skill gate prevent this?
+4. **Eval fix** — can an eval case detect drift toward this failure?
+5. **Dispatch-quality fix** — can better intent capture prevent this?
+6. **Model-selection change** — only if all above are insufficient
 
-Multiple entries often share one underlying problem. Group them.
+### Step 5: Propose Changes
 
-Example:
-- "Developer forgot session summary" + "Validator didn't notice" + "Orchestrator re-ran session"
-  → Root cause: **No gate verifying session summary exists before validation.**
-
-Present groupings. Operator may adjust.
-
-### Step 3: Propose Changes
-
-For each group (P0 first):
+For each group (P0 first), answer these questions:
 
 ```markdown
 ### Change Proposal: [SHORT_NAME]
 
-**Addresses:** [log entry numbers/descriptions]
-**Root cause:** [one sentence]
+**Addresses:** [issue numbers/descriptions]
+**Root cause classification:** [SPECIFICATION | HANDOFF | VERIFICATION]
 
-**Changes:**
+**What failed?**
+[One sentence]
+
+**What evidence shows it?**
+[Reference to run records, incidents, evals, or backlog entries]
+
+**Why did the current gate miss it?**
+[One sentence]
+
+**Smallest fix in the correct layer:**
 - **File:** [which file]
 - **Section:** [which section]
 - **Current behavior:** [what it says now, or "not addressed"]
 - **Proposed behavior:** [what it should say]
-- **Exact diff:** [specific text to add, remove, or replace]
+
+**What eval or metric should improve if this works?**
+[Specific metric or eval case]
 
 **Trade-offs:** [downsides or added complexity]
 ```
 
-### Step 4: Human Review
+### Step 6: Human Review
 
 Present all proposals. Operator approves, rejects, or modifies each.
 Do not apply changes without explicit approval.
 
-### Step 5: Apply Approved Changes
+### Step 7: Apply Approved Changes
 
 For each approved proposal:
 1. Make the change to the relevant file(s).
-2. Bump the version at the top of `OPERATOR_PROTOCOL.md`.
-3. Record in root `PROTOCOL_IMPROVEMENTS.md`:
-   - Root-originated entries: move from "Pending" to "Resolved" with version and description.
-   - Project-originated entries: add to "Resolved" with source attribution.
-     Format: `[vX.Y] [TYPE] [description] (from: {project}) → [what changed]`
-   - Reviewed but intentionally postponed entries: move from `## Pending` to `## Deferred` with a short reason.
-4. **Clear the project-specific file** with a fresh template:
+2. Update `PROTOCOL_IMPROVEMENTS.md`:
+   - Pending → Resolved with version and description.
+   - Reviewed but postponed → move to Deferred with reason.
+3. Update `.agent/evals/manifest.md` with version lineage.
+4. Update `.agent/VERSION.md` if the change is material.
 
-```markdown
-# Protocol Improvement Proposals
-
-> Project-specific observations for the next protocol review.
-> Add entries here as you notice gaps, bugs, or ideas during sessions.
-> These get promoted to the root protocol (or kept project-local) during review.
->
-> **Last cleared:** [DATE] (v[X.Y] protocol review)
-
----
-
-<!-- Format: ### [Short title] -->
-<!-- Date: YYYY-MM-DD -->
-<!-- Context: What happened -->
-<!-- Observation: What went wrong or could be better -->
-<!-- Improvement: Proposed change -->
-```
-
-### Step 6: Summary
+### Step 8: Summary
 
 Produce a changelog entry:
 
@@ -133,6 +135,9 @@ Produce a changelog entry:
 - [Change 1]: [one-line description]
 - [Change 2]: [one-line description]
 
+### Evidence Used
+- [run records, incident logs, eval results referenced]
+
 ### Deferred
 - [Entries reviewed but not addressed, with reason]
 ```
@@ -141,15 +146,15 @@ Produce a changelog entry:
 
 - One root cause = one change proposal. Don't bundle unrelated fixes.
 - Prefer the smallest change that fixes the problem.
-- Fix problems closest to where they occur: prefer preamble changes over protocol changes.
-- Defer IDEA entries with no supporting BUG or GAP unless the operator overrides.
+- Fix problems closest to where they occur: prefer skill/template changes over constitution changes.
+- Defer IDEA entries with no supporting evidence unless the operator overrides.
 - Never remove protocol sections. You may restructure, clarify, or extend.
-- Deferred entries move to `## Deferred`. They are no longer active review work until re-opened.
+- Every proposed change must reference evidence, not just intuition.
+- Protocol changes must pass an eval before being considered permanent.
 
 ## Writing Quality
 
-When proposing changes, enforce these standards in any text you add:
-- **No redundant sentences.** If a point is made once, do not restate it in different words.
-- **No hedging language.** Write directives, not suggestions. "Do X" not "You should consider doing X."
-- **No duplicated rules.** If a rule exists in one place, reference it — don't repeat it.
-- **Dense over verbose.** Every sentence must carry information the reader doesn't already have.
+- No redundant sentences.
+- No hedging language. Write directives, not suggestions.
+- No duplicated rules. If a rule exists in one place, reference it.
+- Dense over verbose.

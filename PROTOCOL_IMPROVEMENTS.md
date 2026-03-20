@@ -16,17 +16,13 @@
 <!-- FRICTION = protocol is correct but too slow/annoying -->
 <!-- IDEA = potential improvement, not yet validated by failure -->
 
-- [GAP] No structured event log for pipeline activity. Pipeline state must be reconstructed from file timestamps, orchestrator-state.md, and session summaries scattered across `specs/` subdirectories. An Orchestrator starting a new session has no single source to answer "what happened since my last session?" without globbing and reading multiple files. A single append-only `docs/agents/events.jsonl` per project (one JSON line per dispatch, completion, verdict, decision) would give both human operators and Orchestrator sessions a reliable, chronological audit trail. (affects: Orchestrator state reconstruction, all roles at session boundaries)
-
-- [BUG] Root master templates `research-findings.md`, `spec.md`, `plan.md`, `test-scenarios.md`, and `qa-verdict.md` use blockquote metadata (`> Status: ...`) instead of YAML frontmatter. Protocol §2.0 explicitly states: "Do not use blockquote metadata — use frontmatter exclusively." Fixed in the Tinyshop project copy; root masters still need updating. (affects: templates/, all roles that produce these artifacts)
-
-- [FRICTION] Agent dispatch requires the operator to find the right startup prompt, copy-paste it, and manually verify the correct files are loaded in the correct order. The startup prompts in `docs/agents/startup-prompts/` contain this information in prose, but the operator must read and interpret them each time. A machine-readable invocation manifest per role (YAML: files to load, load order, first instruction, required artifacts, tool restrictions) would sit alongside the prose prompt and make dispatch verifiable and automatable by any tooling — hooks, scripts, or future UIs. (affects: startup prompts, Protocol Enforcer deliverables, operator workflow)
+_(No pending items — all observations processed in v1.9 migration.)_
 
 ## Deferred
 
 <!-- Format: [reviewed vX.Y] [TYPE] Description → Why deferred -->
 
-- [reviewed v1.7] [IDEA] User Advocate role: a dedicated end-user-perspective evaluator distinct from Validator or Feature Review. (from: DjTools/scue) → Deferred. This may deserve a role eventually, but v1.7 adds an explicit brake on role proliferation. Validate first as an optional review mode or eval track before promoting it to a permanent role.
+- [reviewed v1.9] [IDEA] User Advocate role: a dedicated end-user-perspective evaluator distinct from Validator or Feature Review. (from: DjTools/scue) → Superseded by v1.9. Roles are eliminated in favor of skills. If user-advocate behavior is needed, create a skill or eval case, not a role.
 
 - [reviewed v1.7] [FRICTION] Guided question scripts for session consistency. (from: DjTools/scue) → Deferred. Useful, but not yet backed by enough cross-project evidence to justify new shared templates at the root level.
 
@@ -45,6 +41,24 @@
 ## Resolved
 
 <!-- Format: [vX.Y] [TYPE] [description] → [what changed] -->
+
+- [v1.9] [PI-2025-001] Multi-agent overhead exceeds value for solo sequential work. 13 standing agent roles with per-session preamble loading consumed ~20% of context window before work began. (from: Google-MIT preprint Dec 2025, Anthropic agent architecture guide, Codified Context paper arXiv:2602.20478) → Collapsed to one default operator agent. Converted domain-specific knowledge to on-demand skills with progressive disclosure. Standing roles eliminated; specialist behavior invoked via skill triggers in CLAUDE.md trigger table.
+
+- [v1.9] [PI-2025-002] Flat markdown state causes session artifact sprawl. 23 session artifacts for 3 milestones with no structured queryability. (from: Steve Yegge "Introducing Beads" Oct 2025, Codified Context paper, LangGraph memory model) → Replaced markdown session artifacts with structured task state (`.agent/tasks.jsonl`). Implemented "land the plane" session-end protocol. Raw session transcripts are disposable.
+
+- [v1.9] [PI-2025-003] Handoff contracts drift without schema validation. 12 handoff templates existed as markdown with no runtime validation. (from: Anthropic tool use JSON Schema, OpenAI Structured Outputs, skywork.ai multi-agent orchestration) → Defined ONE handoff envelope as JSON Schema (`.agent/schemas/handoff-envelope.json`). Validation script at `scripts/validate-handoff.sh`. Malformed handoffs rejected before delivery.
+
+- [v1.9] [PI-2025-004] Documentation should be tiered, not flat. All 591 files existed at the same access level. (from: Codified Context arXiv:2602.20478, Anthropic Skills spec, Microsoft Agent Skills spec, HumanLayer CLAUDE.md guide) → Implemented three-tier architecture: Hot (CLAUDE.md ≤200 lines, loaded every session), Warm (skills with progressive disclosure, ~100 tokens advertised, full SKILL.md on trigger), Cold (architecture specs, ADRs, research, retrieved on demand).
+
+- [v1.9] [PI-2025-005] Evals prevent drift better than more documentation. Preamble rules had no verification mechanism. (from: Anthropic evals guide Jan 2026, Anthropic context engineering best practices) → Created eval scaffold at `.agent/evals/` with convention, handoff, and skill trigger eval cases. Every repeated agent failure becomes a test case before it becomes a rule. Runner script at `.agent/evals/run-evals.sh`.
+
+- [v1.9] [PI-2025-006] Decision records should live near execution. Architecture decisions in centralized folders degraded into stale artifacts. (from: e-ADR project, C4 model, MADR streamlined templates) → ADRs warranted only when: decision affects >1 project, changes shared interface, or >1 day to reverse. ADRs live in the repo they affect, not centrally.
+
+- [v1.9] [GAP] No structured event log for pipeline activity. Pipeline state reconstructed from file timestamps and scattered session summaries. (from: v1.8 pending) → Resolved by structured task tracker (`.agent/tasks.jsonl`) which provides queryable task state per project.
+
+- [v1.9] [BUG] Root master templates use blockquote metadata instead of YAML frontmatter. (from: v1.8 pending) → Root templates retained as canonical artifact schemas. Frontmatter enforcement is now an eval case, not just a prose rule.
+
+- [v1.9] [FRICTION] Agent dispatch requires manual copy-paste of startup prompts. (from: v1.8 pending) → Eliminated by removing startup prompts entirely. Skills are loaded on demand via trigger table. No manual dispatch needed.
 
 - [v1.8] [GAP] Artifact metadata header uses blockquote format, not machine-parseable. (§2.0, all templates) → Switched all artifact metadata to YAML frontmatter (`---\nstatus: DRAFT\n---`). Updated §2.0 with two-tier metadata (full 5-field for planning artifacts, slim 2-field for session summaries/verdicts). Updated all root templates. Added frontmatter-only rule to §2.0.
 
