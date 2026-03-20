@@ -1,0 +1,65 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "v1.1.0 handoff envelope for domain boundary crossings",
+  "type": "object",
+  "required": ["schemaVersion", "sourceAgent", "targetSkill", "taskType", "summary", "artifacts", "taskRef", "dispatchStatus"],
+  "properties": {
+    "schemaVersion": { "const": "1.1.0" },
+    "sourceAgent": { "type": "string" },
+    "targetSkill": { "type": "string" },
+    "taskType": {
+      "type": "string",
+      "enum": ["debug", "feature", "refactor", "migration", "test-gen",
+               "investigation", "documentation", "config-infra"],
+      "description": "Determines which flow skill the receiving agent loads"
+    },
+    "summary": { "type": "string", "maxLength": 500 },
+    "artifacts": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "taskRef": { "type": "string", "description": "ID in structured task tracker" },
+    "openQuestions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "blockers": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "dispatchStatus": {
+      "type": "string",
+      "enum": ["READY", "READY_WITH_EXPLICIT_ASSUMPTIONS", "NOT_READY"],
+      "description": "Whether the handoff has sufficient intent capture for safe execution"
+    },
+    "replanTriggers": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Conditions under which the receiving agent must stop and return"
+    },
+    "verificationProcedure": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Specific checks the verifier must perform"
+    },
+    "evidenceRequired": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Proof that must exist before task completion"
+    },
+    "assumptionsInForce": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["assumption", "confidence"],
+        "properties": {
+          "assumption": { "type": "string" },
+          "confidence": { "type": "string", "enum": ["HIGH", "MEDIUM", "LOW"] },
+          "invalidationSignal": { "type": "string" }
+        }
+      },
+      "description": "Assumptions accepted for this dispatch"
+    }
+  },
+  "additionalProperties": false
+}

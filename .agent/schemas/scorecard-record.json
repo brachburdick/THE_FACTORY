@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "v1.0.0 experiential review scorecard",
+  "type": "object",
+  "required": ["scorecard_id", "date", "project", "task_id", "clarity", "confidence", "friction", "surprise"],
+  "properties": {
+    "scorecard_id": { "type": "string", "description": "Unique scorecard identifier (e.g., sc-2026-03-20-001)" },
+    "date": { "type": "string", "format": "date-time" },
+    "project": { "type": "string" },
+    "task_id": { "type": "string", "description": "Related task ID" },
+    "reviewer": { "type": "string", "description": "Who performed the review (e.g., operator, qa)" },
+    "clarity": {
+      "type": "integer", "minimum": 1, "maximum": 5,
+      "description": "Was the output clear and well-structured? (1=unclear, 5=excellent)"
+    },
+    "clarity_evidence": { "type": "string", "description": "Required if clarity is 1-2 or 4-5" },
+    "confidence": {
+      "type": "integer", "minimum": 1, "maximum": 5,
+      "description": "How confident is the reviewer that the output is correct? (1=low, 5=high)"
+    },
+    "confidence_evidence": { "type": "string", "description": "Required if confidence is 1-2 or 4-5" },
+    "friction": {
+      "type": "integer", "minimum": 1, "maximum": 5,
+      "description": "How much unnecessary friction was encountered? (1=smooth, 5=painful)"
+    },
+    "friction_evidence": { "type": "string", "description": "Required if friction is 1-2 or 4-5" },
+    "surprise": {
+      "type": "integer", "minimum": 1, "maximum": 5,
+      "description": "Were there unexpected behaviors or outputs? (1=none, 5=many)"
+    },
+    "surprise_evidence": { "type": "string", "description": "Required if surprise is 1-2 or 4-5" },
+    "taste_alignment": {
+      "type": "integer", "minimum": 1, "maximum": 5,
+      "description": "Does the output match the operator's quality expectations? (1=miss, 5=perfect)"
+    },
+    "taste_alignment_evidence": { "type": "string", "description": "Required if taste_alignment is 1-2 or 4-5" },
+    "notes": { "type": "string", "description": "Free-text notes" }
+  },
+  "additionalProperties": false
+}

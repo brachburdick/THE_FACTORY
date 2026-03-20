@@ -1,0 +1,196 @@
+# Frontier Model Strengths: A Practitioner's Consensus
+**March 2026 — Focused on Agent Orchestration & Large-Scale Engineering**
+
+---
+
+## The Current Field
+
+The frontier as of March 2026 consists of five meaningful contenders:
+
+- **Claude Opus 4.6** (Anthropic, Feb 2026) — 1M context (beta), 80.8% SWE-bench, extended thinking, context compaction, agent teams
+- **GPT-5.4** (OpenAI, Mar 2026) — 1M context in Codex mode, native computer use, 75.1% Terminal-Bench, tool search with 47% token reduction
+- **GPT-5.2 / o3-pro** (OpenAI) — Still the general API flagship; o3-pro for maximum reasoning compute
+- **Gemini 3.1 Pro** (Google, Feb 2026) — 1M production context, 77.1% ARC-AGI-2, 94.3% GPQA Diamond, $2/$12 pricing
+- **Grok 4** (xAI) — Four parallel agents architecture; surprise entrant on WebDev Arena
+- Notable open-weight: **DeepSeek-V3**, **GLM-4.7 Thinking** (90%+ Terminal-Bench Hard), **MiniMax M2.5** (80.2% SWE-bench at $0.30/$1.20)
+
+**Key meta-finding**: No single model dominates. The frontier has fragmented by *task type*. The consensus among serious practitioners is multi-model routing, not single-model loyalty.
+
+---
+
+## Dimension-by-Dimension Analysis
+
+### 1. Research (Deep Information Synthesis)
+
+| Model | Strength | Weakness |
+|-------|----------|----------|
+| **Claude Opus 4.6** | Highest BrowseComp score (hard-to-find info retrieval). Strong at maintaining precise references across long contexts. Leads GDPval-AA for economically valuable knowledge work (finance, legal, research). | Slower; more expensive per token. |
+| **Gemini 3.1 Pro** | 94.3% GPQA Diamond (PhD-level science questions) — best in field. 1M production context ideal for literature review and multi-paper synthesis. Native multimodal (text+image+audio+video). | Sometimes mixes up specific details from different document sections. Less precise cross-referencing than Claude. |
+| **GPT-5.4** | Broad benchmark visibility. Good at structured document creation from research. Strong tool-use for pulling data from multiple sources. | Quality degrades more noticeably approaching context limits. |
+| **o3-pro** | Strongest pure logical deduction. Excels at formal verification and mathematical reasoning. | Extremely expensive ($60/M output). Slow (30s+ responses). Not practical for iterative research loops. |
+
+**Consensus**: For *scientific* research, Gemini 3.1 Pro's GPQA dominance and 1M context at budget pricing is hard to beat. For *professional domain* research (legal, financial, strategic), Claude Opus 4.6 leads by ~144 Elo on GDPval-AA. GPT excels when research requires heavy tool orchestration across external APIs.
+
+---
+
+### 2. Making Large Plans That Stay Good During Execution
+
+This is one of the hardest dimensions to benchmark, and the most relevant to agent orchestration work. A recent benchmark (YC-Bench, Collinear AI, March 2026) tested long-horizon adaptive planning — models acting as startup founders managing resources over a simulated year. The sobering result: **a simple hand-written heuristic beat every frontier model.** Frontier models struggle with long-term reward discrimination (short-term vs. long-term tradeoffs).
+
+| Model | Strength | Weakness |
+|-------|----------|----------|
+| **Claude Opus 4.6** | Plans more carefully than predecessors (per Anthropic's own characterization). Context compaction allows summarizing its own context mid-task, enabling longer-running plans without hitting limits. Best intent understanding for ambiguous specs — critical for plans that must survive contact with reality. | Still degrades on truly long-horizon (multi-day) autonomous planning. Conservative — may over-hedge rather than commit to a plan. |
+| **GPT-5.4** | Strong at execution speed once a plan exists. Better at terminal/CLI plan-and-execute loops (77.3% Terminal-Bench with Codex CLI). | Plans tend toward over-abstraction and unnecessary complexity. Adds more scaffolding than needed, which compounds over a long execution. |
+| **Gemini 3.1 Pro** | Capable planning, especially when plan involves multimodal reasoning. Best survival rate on YC-Bench (8/9 vs. rule-based 9/9). | Higher variance — good plans one run, subtly wrong the next with similar prompts. Inconsistency is the core risk for long execution chains. |
+
+**Consensus**: No model is *good* at this yet in a truly autonomous sense. Claude's advantage is that its plans tend to be more conservative and self-checking, meaning they degrade more gracefully. GPT plans execute faster but accumulate unnecessary complexity. The practical mitigation — and what the best practitioners do — is **externalized plan state with checkpoint-based re-planning**, not trusting any model to hold a plan coherently across many steps.
+
+---
+
+### 3. Examining and Critiquing Large Technical Projects
+
+| Model | Strength | Weakness |
+|-------|----------|----------|
+| **Claude Opus 4.6** | Strongest positioning for debugging, code review, and sustained agentic work inside technical systems. Maintains coherence across full 200K+ without "lost in the middle" degradation. In a 150K-node React repo benchmark, its context compaction created a metadata map and self-checked against it, virtually eliminating memory drift. | 200K standard context is a limit for truly massive codebases (1M is beta/gated). |
+| **GPT-5.4** | Better raw performance on terminal/CLI diagnostic loops. Broader tool ecosystem for pulling in external context. Strong on SWE-bench Pro (57.7% vs ~46% for Claude) — which tests multi-language agentic coding. | More verbose critiques with unnecessary abstraction layers. Context coherence degrades sooner. |
+| **Gemini 3.1 Pro** | 1M production context — can ingest an entire large codebase in one pass. Good at summarization and extracting key patterns. | Gets the gist right but sometimes conflates specific details from different modules. Higher variance on critique quality. |
+
+**Consensus**: Claude is the clear leader for *precision critique* of large technical projects — the kind where you need the model to trace a bug through seven interdependent modules and get the details right. Gemini wins if you need to ingest the *entire* project at once. GPT is strongest for the iterative diagnose-and-fix loop at the terminal level.
+
+---
+
+### 4. Modifying Large Project Infrastructure According to a Plan
+
+This dimension is where the scaffold/harness matters as much as the model. Key finding from March 2026 benchmarks: the same Opus 4.5 swings from 45.9% to 57.5% depending on scaffold — a 12-point gap that dwarfs model-to-model differences.
+
+| Model | Strength | Weakness |
+|-------|----------|----------|
+| **Claude Opus 4.6** | Best at understanding vague intent and translating it into correct infrastructure changes. Claude Code's agent teams feature enables dispatching sub-tasks. 80.8% SWE-bench (real-world bug fixes/PR creation). Writes cleaner, more maintainable code — less editing needed. | Slower execution. More expensive. |
+| **GPT-5.4/5.3-Codex** | Leads Terminal-Bench (CLI execution loops). Better at DevOps/SRE/CI-CD pipeline modifications. Native computer use for interacting with actual interfaces. GPT-5.3-Codex took a step toward Claude-like territory with better git operations and broader task handling. | Writes correct but over-abstracted code. You'll edit GPT outputs to *simplify* them more often. |
+| **Gemini 3.1 Pro** | Best price-performance ratio for bulk modifications. Leads LiveCodeBench (fresh competitive programming problems — less training contamination). | Inconsistent on refactoring tasks — can produce a perfect implementation one time and a subtly wrong one the next. |
+
+**Consensus**: For infrastructure modifications following a plan, the *agent scaffold* matters more than the model. A mid-tier model in a great harness beats a frontier model in a bad one. That said, Claude produces the most maintainable output, GPT executes the fastest in terminal-centric workflows, and Gemini gives you the most modifications per dollar.
+
+---
+
+### 5. Foreseeing Undiscovered Problems While Planning
+
+This tests for *anticipatory reasoning* — seeing failure modes before they manifest.
+
+| Model | Strength | Weakness |
+|-------|----------|----------|
+| **Claude Opus 4.6** | Conservative reasoning style actively looks for failure modes. Highest Humanity's Last Exam score (complex multidisciplinary reasoning). Better at surfacing edge cases and asking clarifying questions rather than assuming. OpenRCA evaluation (root cause analysis of system failures) is a strong proxy — Claude leads. | Can be *too* cautious, flagging low-probability risks that slow progress. |
+| **GPT o3-pro** | Strongest pure logical deduction for formal verification of plans. Can reason through complex dependency chains. | Prohibitively expensive for iterative planning sessions. Not practical as a "planning advisor" you consult repeatedly. |
+| **Gemini 3.1 Pro** | 77.1% ARC-AGI-2 — best at novel pattern recognition, which is the cognitive skill underlying problem anticipation. Strong scientific reasoning for identifying physically/mathematically impossible plans. | Less effective at *practical* engineering failure modes. Good at "this violates physics" but weaker at "this will cause a race condition in production." |
+
+**Consensus**: Claude is the strongest practical choice for engineering risk anticipation. Its conservative alignment philosophy, which some see as a limitation in other contexts, is actually an asset here — it's naturally inclined to surface concerns. Gemini's abstract reasoning is strongest for identifying fundamental logical flaws. o3-pro is the nuclear option for truly high-stakes plan verification but not economically viable for routine use.
+
+---
+
+### 6. Abstraction Quality (Rubber-Meets-Road Implementation)
+
+The gap between a beautiful architecture diagram and working code. This is about whether the model's abstractions actually hold up when you implement them.
+
+| Model | Strength | Weakness |
+|-------|----------|----------|
+| **Claude Opus 4.6** | Writes the most implementation-ready abstractions. Code output requires less simplification. Understands when an abstraction is premature and will push back. Strong at maintaining the right level of abstraction for the problem at hand. | Sometimes *under*-abstracts — produces concrete implementations where a shared abstraction would have been better. |
+| **GPT-5.4** | Produces more *complete* abstraction hierarchies. Good at generating full interface/protocol definitions. Better at spreadsheet modeling and structured document generation (87.3% on internal spreadsheet benchmark). | Chronic over-abstraction. Adds factory patterns, strategy patterns, and indirection that aren't justified by the problem scope. This is consistently reported across practitioners. |
+| **Gemini 3.1 Pro** | Strong at *explaining* abstractions (good for documentation). Can reason about abstractions across modalities (diagramming + code). | Abstractions are less battle-tested — more likely to produce something that looks clean but has a subtle impedance mismatch at integration boundaries. |
+
+**Consensus**: Claude produces abstractions that survive implementation most reliably. GPT produces more elaborate abstractions that often need trimming. This maps directly to your context engineering work — when handing off to a coding agent, Claude's output requires less "translation loss" between the spec and the implementation. GPT's output is better when you *want* a fully elaborated architecture document as a reference artifact, but worse when that document is meant to be implemented literally.
+
+---
+
+### 7. Self-Assessment
+
+How accurately can the model evaluate its own work and know when it's wrong?
+
+| Model | Strength | Weakness |
+|-------|----------|----------|
+| **Claude Opus 4.6** | Better code review and debugging skills to "catch its own mistakes" (per Anthropic). Lower hallucination rate in professional domains. More likely to say "I'm not confident about this" when appropriate. In the 150K React benchmark, its self-checking against its own metadata map virtually eliminated drift. | Can be overly self-critical, hedging on answers it actually got right. |
+| **GPT-5.4** | Better at *structured* self-assessment when explicitly prompted with rubrics. Calibration has improved significantly (GPT-5.2 showed 65% fewer hallucinations than GPT-4o). | Less likely to *spontaneously* flag its own uncertainty. Needs to be prompted to self-check. |
+| **Gemini 3.1 Pro** | Good at identifying when a problem is outside its competence and deferring. | Higher baseline variance means self-assessment is less reliable — it can be confidently wrong. |
+
+**Consensus**: Claude has the best *unprompted* self-assessment. GPT has the best *prompted* self-assessment when given explicit evaluation criteria. For agent workflows, this distinction matters: if your agents are meant to operate autonomously, Claude's spontaneous self-checking is more valuable. If you have explicit validation steps in your pipeline, GPT's structured self-eval may be comparable.
+
+---
+
+### 8. Managing Subagent Dispatch
+
+This is the orchestrator role — deciding what to delegate, to whom, and when.
+
+| Model | Strength | Weakness |
+|-------|----------|----------|
+| **Claude Opus 4.6** | Native agent teams feature (Claude Code). Strongest vendor positioning for multi-agent orchestration. Anthropic explicitly designed for "sustained agentic work." Conservative dispatch — less likely to fire off a subagent prematurely. | Agent teams feature is still new. Less ecosystem tooling than OpenAI's function-calling infrastructure. |
+| **GPT-5.4** | Strongest public benchmark evidence for multi-step tool use and computer interaction. More mature function-calling ecosystem. Tool search feature (47% token reduction) directly benefits orchestration efficiency. | Tends toward breadth over depth in dispatch — may parallelize too aggressively. |
+| **Grok 4** | Novel four-parallel-agents architecture — natively designed for dispatch. | Newer, less proven. Limited independent evaluation. |
+
+**Consensus**: Claude is ahead on *polished orchestration features* for subagent dispatch, and its conservative dispatch style reduces cascading failures. GPT has the more mature and flexible tooling infrastructure. The Interconnects AI assessment (Feb 2026) puts it well: Claude is slightly ahead on subagent features, but the space is evolving fast. For your two-tier orchestration architecture with sanitized project profiles, Claude's conservative dispatch and better intent understanding for ambiguous tasks is likely the better fit for the orchestrator role, while GPT subagents may execute terminal-level tasks faster.
+
+---
+
+### 9. Quality of Subagent Dispatch
+
+Not just *whether* it dispatches, but whether the dispatched tasks are well-scoped, well-specified, and lead to good outcomes.
+
+| Model | Strength | Weakness |
+|-------|----------|----------|
+| **Claude Opus 4.6** | Better at scoping subtasks appropriately. More likely to include context the subagent actually needs. Understands handoff contracts — can produce explicit artifact schemas for inter-agent communication. | May over-specify, giving subagents less room to find better approaches. |
+| **GPT-5.4** | Better at decomposing *terminal-level* tasks (specific commands, specific file operations). Stronger at producing subtasks that are independently verifiable. | Subtask specifications tend to be more verbose, with the same over-abstraction problem noted above. |
+| **Gemini 3.1 Pro** | Can include multimodal context in dispatch (screenshots, diagrams alongside text specs). Cost-effective for high-volume dispatch where many subtasks run in parallel. | Subtask quality is more variable — some are well-scoped, others are ambiguous. |
+
+**Consensus**: Claude produces the highest-quality individual dispatch artifacts. GPT produces more *granular* decompositions that are easier to verify independently. This maps to your handoff contract system: Claude is better at writing the contracts themselves, while GPT may be better as the executor receiving them.
+
+---
+
+### 10. Following a Set of Instructions Without Forgetting Them
+
+This tests instruction adherence over extended interactions — critical for agent workflows.
+
+| Model | Strength | Weakness |
+|-------|----------|----------|
+| **Claude Opus 4.6** | Context compaction explicitly designed for this — can summarize its own context to maintain instruction fidelity over longer runs. 76% MRCR v2 (long-context coherence metric). Maintains coherence across full 200K without "lost in the middle" degradation. | Compaction is lossy — some nuance from original instructions may be compressed away. |
+| **GPT-5.4** | Strong system instruction control. Better at *structured* instruction following when instructions are formatted as schemas or rubrics. | Coherence degrades more noticeably as context length increases. After ~90K tokens, earlier instructions start getting deprioritized. |
+| **Gemini 3.1 Pro** | 1M production context means instructions rarely get pushed out by sheer volume. Strong at maintaining format/schema adherence. | May maintain the *letter* of instructions but drift on *intent* over long conversations. Detail mixing between context sections. |
+
+**Consensus**: Claude is strongest at maintaining instruction *intent* over long interactions. Gemini is strongest at maintaining instruction *presence* (they simply don't get pushed out of context). GPT is strongest when instructions are highly structured (schemas, rubrics) but weakest when they're narrative. For your `.agent/` documentation scaffold with structured preamble templates, Claude's intent-preservation and GPT's schema-adherence are both relevant — the choice depends on how structured your instruction format is.
+
+---
+
+## Summary Matrix
+
+| Dimension | Best Choice | Runner-Up | Notes |
+|-----------|------------|-----------|-------|
+| Research (scientific) | Gemini 3.1 Pro | Claude Opus 4.6 | Gemini's GPQA + context + price |
+| Research (professional/domain) | Claude Opus 4.6 | GPT-5.4 | Claude's GDPval-AA lead is large |
+| Plan coherence over execution | Claude Opus 4.6 | Gemini 3.1 Pro | None are truly good; externalize state |
+| Critiquing large projects | Claude Opus 4.6 | Gemini 3.1 Pro | Claude for precision, Gemini for scale |
+| Infrastructure modification | Scaffold-dependent | Claude (quality) / GPT (speed) | Harness matters more than model |
+| Anticipating problems | Claude Opus 4.6 | Gemini 3.1 Pro | Claude's conservatism is an asset here |
+| Abstraction quality | Claude Opus 4.6 | GPT-5.4 | GPT over-abstracts consistently |
+| Self-assessment | Claude Opus 4.6 | GPT-5.4 (prompted) | Claude unprompted > GPT prompted |
+| Managing subagent dispatch | Claude Opus 4.6 | GPT-5.4 | Claude features, GPT ecosystem |
+| Dispatch quality | Claude Opus 4.6 | GPT-5.4 | Claude writes better contracts |
+| Instruction following | Claude (intent) / Gemini (capacity) | GPT (structured) | Depends on instruction format |
+
+---
+
+## Practical Implications for Multi-Agent Architectures
+
+The consensus points toward a **heterogeneous agent roster**:
+
+1. **Orchestrator layer**: Claude Opus 4.6 — best intent understanding, conservative dispatch, self-checking, and instruction fidelity make it the strongest orchestrator.
+
+2. **Terminal/execution agents**: GPT-5.4/Codex — faster execution, better CLI loops, more mature function-calling. Best for well-specified, independently verifiable subtasks.
+
+3. **Bulk processing / high-volume agents**: Gemini 3.1 Pro or Sonnet 4.6 — price-performance ratio makes parallel dispatch economically viable. Sonnet 4.6 at 79.6% SWE-bench for 1/5th of Opus pricing is remarkable.
+
+4. **Verification/critique layer**: Claude Opus 4.6 — for reviewing output of other agents before merge.
+
+5. **Deep reasoning on specific hard problems**: o3-pro — expensive but unmatched for formal verification when stakes justify cost.
+
+The most important finding across all sources: **the agent scaffold accounts for a 12-22 point performance swing, while model swaps account for ~1 point at the frontier.** Your `.agent/` documentation scaffold, context engineering, and handoff contract design are likely a bigger lever than which model you choose within the top 3.
+
+---
+
+*Sources synthesized from: Anthropic release notes, SmartScope benchmark analysis, Interconnects AI, MorphLLM, DataCamp evaluations, Collinear AI (YC-Bench), VERTU 150K-node benchmark, Design for Online leaderboard, MindStudio hands-on testing, WhatLLM agentic rankings. All data as of March 2026.*

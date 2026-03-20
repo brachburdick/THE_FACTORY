@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "v1.0.0 incident record for failure tracking",
+  "type": "object",
+  "required": ["incident_id", "date", "project", "severity", "failure_type", "root_cause_classification"],
+  "properties": {
+    "incident_id": { "type": "string", "description": "Unique incident identifier (e.g., inc-2026-03-20-001)" },
+    "date": { "type": "string", "format": "date-time" },
+    "project": { "type": "string" },
+    "task_id": { "type": "string", "description": "Related task ID, if applicable" },
+    "severity": {
+      "type": "string",
+      "enum": ["critical", "high", "medium", "low"],
+      "description": "Impact severity"
+    },
+    "failure_type": {
+      "type": "string",
+      "enum": [
+        "false_pass", "false_fail", "escaped_defect", "regression",
+        "iteration_cap_breach", "scope_violation", "missing_intent",
+        "handoff_loss", "mid_build_reversal", "other"
+      ]
+    },
+    "detected_by": {
+      "type": "string",
+      "description": "Who or what detected the incident (e.g., validator, qa, operator, eval)"
+    },
+    "escaped_stage": {
+      "type": "string",
+      "description": "Which stage should have caught this but didn't"
+    },
+    "root_cause_classification": {
+      "type": "string",
+      "enum": ["SPECIFICATION_OR_SYSTEM_DESIGN", "HANDOFF_OR_ALIGNMENT", "VERIFICATION_OR_TERMINATION"],
+      "description": "Which layer the root cause belongs to"
+    },
+    "root_cause_description": {
+      "type": "string",
+      "description": "Free-text description of the root cause"
+    },
+    "protocol_change_candidate": {
+      "type": "boolean",
+      "description": "Whether this incident suggests a protocol change"
+    },
+    "protocol_change_description": {
+      "type": "string",
+      "description": "If protocol_change_candidate is true, describe the suggested change"
+    }
+  },
+  "additionalProperties": false
+}

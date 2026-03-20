@@ -1,0 +1,349 @@
+# Meta-Project Layer for Multi-Agent Software Development: Research Findings
+
+**Date:** 2026-03-20
+**Purpose:** Deep research synthesis on formalizing a meta-project governance layer that sits above execution-layer agents, preventing specification drift, reducing UX friction in human-agent interaction, and enabling iterative refinement across the full lifecycle of any software project.
+**Audience:** Architecture/planning agents and the human operator.
+
+---
+
+## 1. Executive Summary
+
+The problem under investigation: when orchestrating multi-agent software development pipelines, execution-layer agents (coders, testers, reviewers) receive insufficient or ambiguous upstream context, leading to assumption-driven drift, painful UX during invocation, and compounding errors across build cycles. The operator has observed empirically that front-loading structured questioning (via architect/designer agents) dramatically improves downstream execution quality, and wants to know whether formalizing this into a generalized, reusable meta-project layer is supported by research and practice.
+
+**Finding: Yes. This is a well-validated architectural concern with converging solutions from multiple independent research groups and industry practitioners.** The emerging paradigm is called **Spec-Driven Development (SDD)**, and the specific architectural pattern is the **dual-loop (inner/outer) agent architecture** with a **frozen/mutable specification** as the central governing artifact.
+
+This meta-project layer is architecturally distinct from execution-layer agent orchestration. Criticism of over-specialized agent roles applies to the execution plane (too many niche do-er agents). The meta-project layer is a control/governance plane and benefits from formal definition.
+
+---
+
+## 2. Key Concepts and Terminology
+
+### 2.1 Spec-Driven Development (SDD)
+
+A methodology where specifications serve as the primary development artifact from which code is derived, rather than as passive documentation. The specification is executable, authoritative, and continuously validated against implementation.
+
+**Key property:** Drift becomes machine-detectable by default. When implementation diverges from the spec, automated checks catch it — unlike traditional development where deviations propagate silently for months.
+
+**Three levels of SDD adoption (per Birgitta Böckeler / ThoughtWorks taxonomy):**
+
+- **Spec-First:** Write the spec before code, but code can diverge over time. Lightweight.
+- **Spec-Anchored:** The spec informs and constrains execution. Drift is monitored but the spec is not the sole generative source. **This is the recommended level for the operator's use case.**
+- **Spec-as-Source:** The spec is the single source of truth from which all code is derived. Heavyweight. Can produce excessive markdown overhead and long agent runtimes.
+
+### 2.2 The Dual-Loop Architecture (Inner/Outer)
+
+- **Inner Loop:** Fast, local, reactive. Do-er agents executing tasks — writing code, running tests, iterating on implementation. Operates within a single context window or work session.
+- **Outer Loop:** Slow, global, regulatory. Monitors progress against the specification, detects drift, reviews convergence, and resets strategy when the inner loop stalls or diverges. Operates across work sessions and build cycles.
+
+The outer loop is the meta-project layer. It transforms unbounded agent cognition into bounded improvement.
+
+### 2.3 Frozen/Mutable Specification
+
+A two-section spec design that prevents uncontrolled drift while allowing agents to refine and clarify:
+
+- **Frozen Section (read-only):** The original requirements as written by the human operator. Agents can reference but cannot modify. This is ground truth — no matter how much refinement happens, comparison back to original intent is always possible.
+- **Mutable Section (agent-editable):** Clarifications, interpretations, discovered requirements, architectural decisions revealed during implementation, and status updates. This is where "things that can't be determined until the app has been somewhat developed" get captured.
+
+---
+
+## 3. Converging Implementations
+
+Three major independent implementations have converged on essentially the same architecture:
+
+### 3.1 GitHub Spec Kit (Open Source, Sept 2025)
+
+**Workflow:** Constitution → Specify → Plan → Tasks → Implement → PR
+
+- `/constitution` — Immutable project principles, tech stack constraints, coding standards.
+- `/specify` — High-level description of what and why. Agent generates detailed spec with user stories, acceptance criteria, edge cases. Human reviews and refines.
+- `/plan` — Technical implementation plan. Agent generates architecture decisions, component breakdown, tech choices. Human provides high-level technical direction.
+- `/tasks` — Discrete, sequenced implementation work items derived from spec + plan.
+- `/implement` — Do-er agents execute tasks against the spec/plan contract.
+
+**Key insight from GitHub:** "We treat coding agents like search engines when we should be treating them more like literal-minded pair programmers." The spec is what makes the pair programmer effective.
+
+**Agent-agnostic:** Works with Claude Code, GitHub Copilot, Gemini CLI, Cursor, Windsurf, and others.
+
+### 3.2 Amazon Kiro (Commercial IDE, July 2025)
+
+**Workflow:** Requirements → Design → Tasks → Implement
+
+- Three-phase spec workflow: generating user stories with acceptance criteria (in EARS notation), creating technical design with diagrams and schemas, and breaking work into sequenced trackable tasks.
+- Spec and code remain synchronized through event-driven "hooks" (file save triggers, commit triggers).
+- "Steering files" provide persistent project context in markdown — analogous to the operator's `.agent/` documentation scaffold.
+
+### 3.3 MetaGPT (Research/Open Source, ICLR 2024)
+
+**Core philosophy:** `Code = SOP(Team)` — Standardized Operating Procedures encoded into prompt sequences.
+
+- Assigns specialized roles (Product Manager, Architect, Project Manager, Engineer) following an assembly-line paradigm.
+- Each role produces structured intermediate outputs (PRDs, design artifacts, flowcharts, interface specs) that must comply with established standards before handoff.
+- Publish-subscribe communication: agents subscribe to relevant upstream messages based on their role profiles.
+- Executive feedback mechanism: Engineer agent iteratively runs and debugs code, comparing against PRD, system design, and code files stored in memory.
+
+**Key research finding:** The use of intermediate structured outputs significantly increases the success rate of target code generation because it maintains consistency in communication, minimizing ambiguities and errors during collaboration. MetaGPT achieved state-of-the-art on HumanEval (85.9%) and MBPP (87.7%) benchmarks, with the iterative feedback mechanism contributing a 4.2-5.4% absolute improvement.
+
+### 3.4 MassGen (Research, Feb 2026)
+
+**Unique contribution:** Formalized the frozen/mutable spec pattern with drift detection built into the refinement loop.
+
+- Agents produce `(answer, updated_spec, changedoc)` tuples.
+- Changedocs include spec coverage, requirement traceability, and drift detection.
+- If Agent 1's implementation drifts from the spec, Agent 2 catches it during observation and course-corrects — documenting the correction.
+- Decisions structured as records (DEC-XXX) with traceability links to requirements (REQ-XXX).
+
+---
+
+## 4. The Anthropic Patterns (Most Relevant to Operator's Stack)
+
+### 4.1 Building Effective Agents (Dec 2024)
+
+Anthropic's canonical guidance identifies five workflow patterns and one agentic pattern:
+
+1. **Prompt Chaining** — Sequential steps with validation gates between them.
+2. **Routing** — Classifying input to direct to specialized handlers.
+3. **Parallelization** — Independent subtasks running concurrently.
+4. **Orchestrator-Workers** — Central LLM dynamically breaks down tasks and delegates.
+5. **Evaluator-Optimizer** — One LLM generates, another evaluates in a loop.
+6. **Agents** — Autonomous systems using tools based on environmental feedback in a loop.
+
+**Key principle:** "Consistently, the most successful implementations weren't using complex frameworks or specialized libraries. Instead, they were building with simple, composable patterns."
+
+The meta-project layer maps to a combination of **Evaluator-Optimizer** (the outer review loop) and **Orchestrator-Workers** (the spec-to-task decomposition), sitting above the inner-loop agents.
+
+### 4.2 Long-Running Agent Harness (2025)
+
+Anthropic's engineering team identified the core challenge: agents working across many context windows lose continuity. Their solution:
+
+- **Initializer Agent:** First session uses a specialized prompt to set up the environment — including a `claude-progress.txt` file that keeps a log of what agents have done.
+- **Coding Agent:** Each subsequent session makes incremental progress while leaving the environment in a clean state — "the kind of code that would be appropriate for merging to a main branch."
+
+**Directly applicable pattern:** The progress ledger artifact that bridges context windows. This is the mechanism by which the outer loop maintains state across inner-loop execution cycles.
+
+### 4.3 Inner/Outer Loop Code Review (2025)
+
+Anthropic's Claude Code team open-sourced their own review system:
+
+- **Inner Loop:** Developers iterate with Claude Code using slash commands and subagents. Immediate feedback cycle.
+- **Outer Loop:** GitHub Action runners automatically perform reviews after submission without developer intervention.
+- **Orchestration Layer (the meta-layer):** Three components — **Context** (prompts, docs, codebase, business objectives), **Tools** (search capabilities, MCPs), and **Validators** (examples, guidelines).
+
+---
+
+## 5. Addy Osmani's Spec Framework (O'Reilly, Jan 2026)
+
+Osmani's widely-cited guide synthesizes practical spec-writing patterns for AI agents. Key contributions relevant to the meta-project layer:
+
+### 5.1 Six Core Areas of a Good Spec
+
+1. **Goal/Purpose** — What and why, not how. User stories and acceptance criteria.
+2. **Structure/Architecture** — High-level component layout, data flow, key interfaces.
+3. **Style/Conventions** — Coding standards, naming conventions, design system references.
+4. **Testing Strategy** — Expected inputs/outputs, conformance suites, test-driven criteria.
+5. **Boundaries** — Three-tier: Always do / Ask first / Never do.
+6. **Iteration Plan** — How the spec evolves as implementation reveals new information.
+
+### 5.2 Three-Tier Boundary Model
+
+- **Always:** Non-negotiable constraints the agent must follow without asking. (e.g., "Always use TypeScript strict mode," "Always write tests for new functions.")
+- **Ask First:** Decision points where the agent must surface the choice to the human before proceeding. (e.g., "If a library choice isn't specified, propose options before installing.")
+- **Never:** Hard prohibitions. (e.g., "Never modify the database schema without explicit approval," "Never delete existing test files.")
+
+### 5.3 LLM-as-Judge for Subjective Evaluation
+
+Use a second agent (or separate prompt) to review the first agent's output against spec quality guidelines. Effective for criteria that can't be automated: code style, readability, adherence to architectural patterns. This is the "evaluator" half of the evaluator-optimizer pattern applied at the meta-project level.
+
+### 5.4 Progressive Disclosure / Context Management
+
+"Simply throwing a massive spec at an AI agent doesn't work — context window limits and the model's attention budget get in the way." The solution: feed relevant sections of the spec one piece at a time. Use summary TOCs, subagents, or parallel orchestration to handle large specs. **This aligns directly with the operator's existing practice of scoped agent context and minimizing redundant document reads.**
+
+---
+
+## 6. Practical Architecture for the Meta-Project Layer
+
+Based on the research synthesis, the following architecture is recommended. It maps to the operator's existing `.agent/` scaffold and inter-agent handoff contract system.
+
+### 6.1 Persistent Artifacts (Three Documents)
+
+#### 6.1.1 Constitution (`constitution.md`)
+
+Immutable project-level principles that apply across all execution cycles.
+
+**Contents:**
+- Tech stack constraints and preferences (e.g., "TypeScript/Node.js with NodeNext module resolution")
+- Architectural invariants (e.g., "Federated GraphQL architecture," "MongoDB/Redis/AWS infrastructure")
+- Coding standards and conventions
+- Security and compliance requirements
+- Design system references
+- Three-tier boundaries (Always / Ask First / Never)
+
+**Rules:**
+- Human-authored only. Agents cannot modify.
+- Versioned in source control alongside the project.
+- Read by all agents as preamble context.
+
+#### 6.1.2 Living Specification (`spec.md`)
+
+Two-section document governing what is being built and why.
+
+**Frozen Section:**
+- Original requirements as stated by the human operator
+- User stories with acceptance criteria
+- Success metrics and definition of done
+- Non-functional requirements (performance, accessibility, etc.)
+
+**Mutable Section:**
+- Discovered requirements (surfaced during implementation)
+- Architectural decisions and rationale (ADRs)
+- Clarifications and interpretations of ambiguous frozen requirements
+- Open questions awaiting human resolution
+- Dependency/integration discoveries
+
+**Rules:**
+- Frozen section: human-authored, agent-readable only.
+- Mutable section: agents can append/update with structured entries (timestamped, attributed to the originating agent/cycle).
+- Human reviews mutable section at each review gate.
+- All mutable entries must reference the frozen requirement they relate to (traceability).
+
+#### 6.1.3 Progress Ledger (`progress.md`)
+
+Session-bridging artifact that maintains continuity across context windows and build cycles.
+
+**Contents:**
+- Completed tasks with status and any deviations from plan
+- Current state of the codebase (what's working, what's scaffolded, what's blocked)
+- Known issues and technical debt introduced
+- Next priorities (derived from the outer loop review)
+- Decisions made during execution that affect future work
+
+**Rules:**
+- Updated by do-er agents at the end of each execution cycle.
+- Read by all agents at the start of each new cycle.
+- Human reviews at each review gate.
+
+### 6.2 The Review Gate (Outer Loop Cycle)
+
+The iterative process between build cycles:
+
+```
+┌─────────────────────────────────────────────────────┐
+│                   REVIEW GATE                        │
+│                                                      │
+│  1. Do-er agents complete current task batch          │
+│  2. Progress ledger updated                          │
+│  3. Evaluator compares output against frozen spec     │
+│     - Are acceptance criteria met?                   │
+│     - Has implementation drifted from intent?        │
+│     - What new requirements were discovered?         │
+│  4. Mutable spec updated with discoveries            │
+│  5. Human reviews:                                   │
+│     - Mutable spec additions (approve/reject/modify) │
+│     - Progress ledger accuracy                       │
+│     - Drift assessment                               │
+│  6. Next task batch generated from delta              │
+│     - Remaining frozen requirements not yet met      │
+│     - Approved mutable additions                     │
+│     - Prioritized by human                           │
+│  7. Do-er agents receive new task batch + updated     │
+│     context (constitution + spec + progress ledger)  │
+│                                                      │
+└─────────────────────────────────────────────────────┘
+```
+
+### 6.3 The Questioning Protocol (Front-Loading Spec Quality)
+
+The operator's empirical observation that having architect/designer agents ask extensive questions dramatically improved outcomes is well-supported by the research. This should be formalized as a standard phase before any execution begins.
+
+**Minimum Viable Question Set (for any software project):**
+
+1. **User Identity:** Who is the end user? What are their technical capabilities? What devices/platforms?
+2. **Core Value Proposition:** What is the single most important thing this software must do? What happens if it fails?
+3. **Scope Boundaries:** What is explicitly out of scope? What adjacent features should be deferred?
+4. **Data Model:** What are the core entities? What are their relationships? What is the source of truth?
+5. **Integration Surface:** What external systems does this touch? What are the contract constraints?
+6. **State Management:** What state must persist across sessions? What can be ephemeral?
+7. **Error Handling Philosophy:** Fail fast vs. graceful degradation? User-facing error strategy?
+8. **Authentication/Authorization:** Who can access what? What are the trust boundaries?
+9. **Deployment Topology:** Where does this run? What are the infrastructure constraints?
+10. **Success Metrics:** How do we know this is working correctly? What does "done" look like?
+
+**Questions that should be deferred to later review gates (can't be fully answered upfront):**
+
+- Performance optimization targets (need baseline measurements)
+- Edge case handling for discovered requirements
+- Integration contract details for systems not yet explored
+- UX refinements based on working prototype feedback
+
+---
+
+## 7. Relationship to Operator's Existing Architecture
+
+### 7.1 What Already Exists (and maps cleanly)
+
+| Existing Component | Maps To |
+|---|---|
+| `.agent/` documentation scaffold | Constitution + scoped context delivery |
+| Inter-agent handoff contracts with artifact schemas | Structured intermediate outputs (MetaGPT pattern) |
+| Sanitized Project Profiles (two-tier privacy) | Constitution layer with redacted/full variants |
+| Architect agent asking questions | Questioning Protocol (front-loading spec quality) |
+| Designer agent asking questions | Same — spec refinement phase |
+| Qualia-informed iterative reviews | Review Gate (outer loop cycle) |
+| Scoped agent context (minimizing redundant reads) | Progressive disclosure / context management |
+| Agents that ask rather than assume | Three-tier boundary model (Ask First tier) |
+
+### 7.2 What's Missing (and should be added)
+
+1. **Formal Frozen/Mutable Spec Document:** The operator likely has informal versions of this scattered across project docs. Consolidating into a single two-section artifact with explicit rules about who can modify what is the highest-impact change.
+
+2. **Progress Ledger:** A standardized session-bridging document that all agents read at cycle start and update at cycle end. This is the mechanism that prevents "where were we?" confusion across context windows.
+
+3. **Explicit Review Gate Protocol:** Formalizing the outer-loop review as a defined process step (not ad hoc) with a checklist: drift assessment, mutable spec review, next-batch generation.
+
+4. **Conformance Checks:** Automated or semi-automated validation that implementation matches frozen spec acceptance criteria. Can be as simple as "agent compares output against spec checklist" or as robust as contract testing.
+
+5. **Generalized Template:** A project-agnostic starter kit that can be instantiated for any new project in the operator's portfolio. The three artifacts (constitution, spec, ledger) with standard sections and the questioning protocol as a Phase 0 checklist.
+
+---
+
+## 8. Risks and Cautions
+
+### 8.1 Markdown Overhead
+
+Practitioners testing pure SDD (spec-as-source) report excessive documentation generation, long agent runtimes, and friction. The recommendation is **spec-anchored** rather than spec-as-source: the spec informs and constrains but is not the sole generative artifact. The operator's existing pattern of structured handoff contracts already operates at this level.
+
+### 8.2 The "PM Not Engineer" Trap
+
+Multiple practitioners noted that heavy SDD workflows can make the developer feel like a project manager rather than an engineer. The mitigation is clear: the meta-project layer handles governance, the human retains architectural authority, and the do-er agents handle implementation. The human's role shifts from "writing code" to "verifying intent preservation" — which is the correct allocation of human attention in an agentic workflow.
+
+### 8.3 Over-Engineering the Outer Loop
+
+The outer loop should be lightweight relative to the inner loop. If reviewing the spec takes longer than the execution cycle it governs, the process is too heavy. The review gate should be a fast checkpoint, not a full re-planning session. Reserve deep re-planning for cases where drift is detected or requirements have materially changed.
+
+### 8.4 Context Window Pressure
+
+The three artifacts (constitution + spec + ledger) must fit within reasonable context budgets alongside the agent's task-specific context. This means being disciplined about document length — summarize aggressively, use hierarchical structure, and only inject the sections relevant to the current agent's scope. The operator's existing practice of scoped context delivery already handles this well.
+
+---
+
+## 9. Sources and Further Reading
+
+- **GitHub Spec Kit:** https://github.com/github/spec-kit — Open source SDD toolkit. Agent-agnostic.
+- **GitHub Blog on SDD:** https://github.blog/ai-and-ml/generative-ai/spec-driven-development-with-ai-get-started-with-a-new-open-source-toolkit/
+- **Amazon Kiro:** https://kiro.dev/docs/specs/ — Commercial IDE with native SDD workflow.
+- **MetaGPT:** https://arxiv.org/abs/2308.00352 — ICLR 2024 paper on SOP-driven multi-agent collaboration.
+- **MassGen Spec Traceability:** https://github.com/massgen/MassGen/issues/881 — Frozen/mutable spec pattern with drift detection.
+- **Addy Osmani, "How to Write a Good Spec for AI Agents":** https://addyosmani.com/blog/good-spec/ — Comprehensive practical guide.
+- **Addy Osmani, "Self-Improving Coding Agents":** https://addyosmani.com/blog/self-improving-agents/ — Task-loop and conformance patterns.
+- **Anthropic, "Building Effective Agents":** https://www.anthropic.com/research/building-effective-agents — Canonical workflow/agent pattern taxonomy.
+- **Anthropic, "Effective Harnesses for Long-Running Agents":** https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents — Initializer + progress ledger pattern.
+- **Anthropic, "How We Built Our Multi-Agent Research System":** https://www.anthropic.com/engineering/multi-agent-research-system — Orchestrator-worker at scale.
+- **InfoQ, "Spec-Driven Development: When Architecture Becomes Executable":** https://www.infoq.com/articles/spec-driven-development/ — SDD as architectural paradigm.
+- **OpenHands, "Agents in the Outer Loop":** https://openhands.dev/blog/20251202-agents-in-the-outer-loop — Inner/outer loop terminology for development workflows.
+- **CyberLoop Framework:** https://roackb2.medium.com/the-cyberloop-framework-engineering-evolution-in-intelligent-systems-6499f58bf4a2 — Metacognitive outer loop with drift monitoring.
+- **Scott Logic, "Putting Spec Kit Through Its Paces":** https://blog.scottlogic.com/2025/11/26/putting-spec-kit-through-its-paces-radical-idea-or-reinvented-waterfall.html — Critical practitioner review of SDD overhead.
+
+---
+
+## 10. Conclusion
+
+The operator's instinct to formalize a meta-project layer is strongly validated by converging research and industry practice. The layer is architecturally distinct from execution-layer agent orchestration and benefits from explicit definition. The recommended implementation is a **spec-anchored dual-loop architecture** with three persistent artifacts (constitution, living spec with frozen/mutable sections, progress ledger), a standardized questioning protocol for front-loading spec quality, and explicit review gates between execution cycles. This maps cleanly to the operator's existing `.agent/` scaffold and inter-agent handoff contract system, requiring primarily consolidation and formalization of patterns already in informal use.

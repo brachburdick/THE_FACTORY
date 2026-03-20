@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "v1.0.0 run record for task execution telemetry",
+  "type": "object",
+  "required": ["run_id", "date", "project_id", "task_id", "task_type", "result"],
+  "properties": {
+    "run_id": { "type": "string", "description": "Unique run identifier (e.g., run-2026-03-20-001)" },
+    "date": { "type": "string", "format": "date-time" },
+    "project_id": { "type": "string" },
+    "task_id": { "type": "string", "description": "ID in structured task tracker" },
+    "task_type": {
+      "type": "string",
+      "enum": ["debug", "feature", "refactor", "migration", "test-gen", "investigation", "documentation", "config-infra"]
+    },
+    "workflow_path": { "type": "string", "description": "Flow skill used (e.g., debug-flow, feature-flow)" },
+    "agents_or_skills_invoked": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Skills and domain skills loaded during execution"
+    },
+    "prompt_or_skill_versions": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "description": "Version identifiers for prompts and skills used"
+    },
+    "result": {
+      "type": "string",
+      "enum": ["success", "partial", "failed", "blocked", "escalated"],
+      "description": "Outcome of the task execution"
+    },
+    "rework_required": { "type": "boolean", "description": "Whether the task needed rework after initial completion" },
+    "validator_result": {
+      "type": "string",
+      "enum": ["pass", "fail", "not_applicable"],
+      "description": "Validator verdict if applicable"
+    },
+    "qa_result": {
+      "type": "string",
+      "enum": ["pass", "fail", "not_applicable"],
+      "description": "QA verdict if applicable"
+    },
+    "attempt_count": { "type": "integer", "minimum": 1, "description": "Number of attempts before completion" },
+    "input_tokens": { "type": "integer", "minimum": 0 },
+    "output_tokens": { "type": "integer", "minimum": 0 },
+    "tool_calls": { "type": "integer", "minimum": 0 },
+    "latency_ms": { "type": "integer", "minimum": 0, "description": "Wall-clock time in milliseconds" },
+    "estimated_cost": { "type": "number", "minimum": 0, "description": "Estimated cost in USD" }
+  },
+  "additionalProperties": false
+}
