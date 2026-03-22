@@ -16,11 +16,154 @@
 <!-- FRICTION = protocol is correct but too slow/annoying -->
 <!-- IDEA = potential improvement, not yet validated by failure -->
 
+- [IDEA] Lightweight workflow controller agent between operator and reasoning agents. See detailed proposal below: **WFC-001**.
+
 - [GAP] Telemetry files (runs.jsonl, incidents.jsonl, scorecards.jsonl) are empty scaffolding. No baselines exist yet. First 20 real tasks should establish baseline metrics before any protocol review uses them as evidence. (from: v1.9.2 rollout)
 
 - [GAP] Eval cases in .agent/evals/ (conventions/, flows/, handoffs/, skills/) have not been updated to cover v1.9.2 additions — new schemas (scorecard-record.json, run-record.json, incident-record.json), updated templates (plan.md, validator-verdict.md), and new template fields (PDR refs, evidence refs, dispatch status) lack eval coverage. (from: v1.9.2 rollout)
 
 - [IDEA] Variant testing section in .agent/evals/manifest.md is empty scaffolding. No value until a workflow change needs A/B comparison. Consider removing if unused after 2 protocol review cycles. (from: v1.9.2 rollout)
+
+---
+
+### WFC-001: Lightweight Workflow Controller Agent
+**Date:** 2026-03-21
+**Classification:** IDEA — not yet validated by failure. Requires 5+ feature sessions of data collection before implementation.
+**Source:** Pipeline review session (external reviewer + operator discussion)
+**Scope:** Cross-project (root protocol change)
+
+#### Problem
+
+The operator currently performs two cognitively different jobs:
+1. **Strategic reasoning** — priority decisions, feature rationale challenges, risk assessment, spec review
+2. **Mechanical routing** — checking field presence in artifacts, deciding "does this need QA?", updating tasks.jsonl, verifying session summaries exist, enforcing gate conditions, preparing next handoff
+
+Job #2 is procedural, not creative. It follows a checklist. It doesn't require the context or reasoning capability of a heavy model. But it currently either falls on the operator (manual overhead) or on the Orchestrator/Architect (context window inflation).
+
+This is the same problem that caused Orchestrator overload in v1.5-1.7: technical judgment responsibilities accumulated on the routing layer because routing was the easiest place to add a check.
+
+#### Proposed Solution
+
+A lightweight agent (Haiku-class) that executes a rigid procedure document. It sits between the operator and the reasoning agents, handling all mechanical workflow steps:
+
+```
+Operator (Brach)
+  │
+  ▼
+CONTROLLER (lightweight, procedural, Haiku)
+  │
+  ├── Pre-dispatch: artifact completeness, gate checks, field validation
+  ├── Routing: which agent next, based on tags and procedure rules
+  ├── Post-session: artifact existence, required field presence, flag detection
+  ├── State updates: tasks.jsonl, run records, state snapshot
+  └── Git hygiene: stage + commit session changes
+  │
+  ▼
+Reasoning Agents (Architect, Developer, Researcher — Sonnet/Opus)
+```
+
+#### Key Design Principles
+
+1. **The controller does NOT reason.** It follows a procedure. It checks boxes and routes. If a decision requires judgment (ambiguous scope, unclear priority, conflicting signals), it escalates to the operator or invokes the Architect.
+
+2. **The procedure document is the key artifact.** It defines every step the controller takes, every gate it checks, every routing rule it applies. It's versioned and iterable — the operator tweaks the procedure, not the agent.
+
+3. **Complementary strengths, not model replacement.** Heavy models (Sonnet/Opus) do the creative/analytical work. The controller does the mechanical work. Neither does the other's job.
+
+4. **Cheap and fast.** Haiku tokens are ~20x cheaper than Opus. The controller runs between every interaction without adding noticeable cost or latency.
+
+#### Procedure Document Structure (Draft)
+
+The controller would execute three procedures:
+
+**Pre-Dispatch Procedure:**
+1. Check handoff packet completeness (all required sections present per template)
+2. Check Dispatch Readiness Gate (6 criteria from §3.1)
+3. If task has `Interface Scope` tag → verify Field Preservation Checklist is loaded
+4. If task has FE components → verify State Behavior section exists and has no `[ASK OPERATOR]`
+5. If any open questions → STOP, surface to operator
+6. If all pass → dispatch to target agent
+
+**Post-Session Procedure:**
+1. Verify session summary file exists at expected output path
+2. Verify required fields are non-empty (Status, Work Performed, Files Changed, Decisions Made)
+3. Scan for `[INTERFACE IMPACT]`, `[BLOCKED]`, `[SCOPE VIOLATION]` flags
+4. If Developer session → route to Validator
+5. If Validator PASS + task tagged `QA-REQUIRED` → route to QA
+6. If Validator FAIL (attempt < 3) → prepare retry handoff with remediation steps
+7. If Validator FAIL (attempt >= 3) → log incident, escalate to operator
+8. Update `.agent/tasks.jsonl` with session outcome
+9. Git add session-changed files + git commit with `[TASK-ID]: [objective]`
+
+**Between-Session Procedure:**
+1. Read latest session output (verdict for Developer sessions, summary for others)
+2. Cross-reference against preceding session's flags (the pre-dispatch cross-reference check)
+3. Apply routing rules from task quality tags
+4. If next step requires operator decision → surface with specific question
+5. If next step is mechanical → prepare handoff and present to operator for approval
+6. Update state snapshot
+
+#### What This Replaces
+
+| Currently done by | Would move to controller |
+|---|---|
+| Operator: manually checking artifact completeness | Pre-dispatch procedure step 1-2 |
+| Operator: deciding "does this need QA?" | Post-session procedure step 5 (reads Architect's tag) |
+| Operator: updating tasks.jsonl | Post-session procedure step 8 |
+| Operator: git add + commit after sessions | Post-session procedure step 9 |
+| Operator: checking for flag propagation between sessions | Between-session procedure step 2 |
+| Orchestrator: reading and routing based on session summaries | Between-session procedure steps 1-5 |
+| Validator: checking session summary field completeness | Post-session procedure step 2 |
+
+#### What This Does NOT Replace
+
+- Operator strategic decisions (priority, scope, feature rationale)
+- Architect reasoning (task decomposition, risk assessment, spec design)
+- Developer implementation work
+- Researcher investigation
+- Any creative or analytical judgment
+
+#### Relationship to Existing v1.9.2 Architecture
+
+The controller fits the v1.9.2 specialization model:
+- It is NOT a new standing role (violates §1.3 "default to smallest change")
+- It IS a new workflow phase — a procedural layer between dispatch and execution
+- It could be implemented as a skill (`.claude/skills/workflow-controller/`) loaded into a Haiku session
+- The procedure document is the skill file; the controller is just the runner
+
+This aligns with the v1.9 principle: "specialist behavior via skills, not standing roles."
+
+#### Prerequisites Before Implementation
+
+1. **Data collection (5+ feature sessions):** Run the current v1.9.2 pipeline. Keep a tally of every time the operator performs mechanical routing work. Record: what step, how long, what could have caught it automatically. This becomes the controller's procedure document.
+
+2. **Identify gate failure patterns:** Which gates do agents actually hit? Which do they skip? Where does the operator catch things the protocol missed? This tells you which procedure steps are load-bearing vs. ceremony.
+
+3. **Baseline metrics:** The telemetry files (runs.jsonl, incidents.jsonl) need real data. The controller's value is measurable: operator-minutes-per-task should decrease. Without a baseline, you can't prove it helped.
+
+4. **Haiku capability validation:** Test whether Haiku can reliably execute a 50-line procedure document with file reads, pattern matching, and conditional routing. If it can't, Sonnet is the fallback (more expensive but still cheaper than Opus for procedural work).
+
+#### Success Criteria
+
+- Operator minutes per task decreases by >30%
+- Zero increase in escaped defects (controller doesn't miss flags that operator would have caught)
+- Artifact completeness rate increases (fewer dropped fields, fewer missing summaries)
+- No increase in total token cost per task (Haiku savings offset by additional session)
+
+#### Risks
+
+- **Procedure document maintenance:** The procedure is another artifact to keep current. If it drifts from the actual protocol, the controller enforces stale rules.
+- **False confidence:** Operator may stop checking things the controller "should" catch. If the controller misses something, the error goes undetected longer.
+- **Complexity budget:** Adding a layer between operator and agents adds a layer. The net complexity must be lower, not higher.
+
+#### Decision Gate
+
+After 5 feature sessions of data collection:
+- If operator spends >20% of session time on mechanical routing → implement
+- If operator spends <10% → defer indefinitely (the overhead isn't worth automating)
+- If 10-20% → evaluate whether the specific steps are automatable by Haiku
+
+---
 
 ## Deferred
 
@@ -45,6 +188,8 @@
 ## Resolved
 
 <!-- Format: [vX.Y] [TYPE] [description] → [what changed] -->
+
+- [v1.9.2] [GAP] No formal pipeline step between research findings and feature work — brainstorming applications of research happened ad-hoc in conversation with no structured output or triage mechanism. (from: SCUE Pro DJ Link research → brainstorm pattern) → Created portfolio-level brainstorm skill (`skills/brainstorm/SKILL.md`): research→candidates transformer producing JSONL output at `{project}/.agent/brainstorm/{slug}.jsonl`. Operator triages ideas before promotion to task tracker. Added trigger table entry and flow routing row to constitution. Added eval case (`brainstorm-output-valid.eval.md`).
 
 - [v1.9] [PI-2025-001] Multi-agent overhead exceeds value for solo sequential work. 13 standing agent roles with per-session preamble loading consumed ~20% of context window before work began. (from: Google-MIT preprint Dec 2025, Anthropic agent architecture guide, Codified Context paper arXiv:2602.20478) → Collapsed to one default operator agent. Converted domain-specific knowledge to on-demand skills with progressive disclosure. Standing roles eliminated; specialist behavior invoked via skill triggers in CLAUDE.md trigger table.
 

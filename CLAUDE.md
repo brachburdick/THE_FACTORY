@@ -27,6 +27,7 @@
 | Handoff between domains | `skills/handoff/SKILL.md` | JSON Schema envelope, validation |
 | New project scaffolding | `skills/project-scaffold/SKILL.md` | .agent/ structure, CLAUDE.md template |
 | Protocol review / meta-infra | `skills/protocol-review/SKILL.md` | Review process, scoring rubric |
+| Brainstorm / ideation / applications | `skills/brainstorm/SKILL.md` | Research→candidates transformer |
 
 ## Task-Type Flow Routing
 
@@ -42,6 +43,7 @@ Do NOT blend flows — complete one flow, then start the next if needed.
 | migrate, upgrade, convert, move from X to Y | _(future: migration-flow/)_ | Use feature-flow with extra caution. |
 | write tests, test coverage, add tests for | _(future: test-gen-flow/)_ | Use feature-flow Phase 4 expanded. |
 | investigate, research, understand, analyze, why does | _(future: investigation-flow/)_ | Read-only, report to human. |
+| brainstorm, ideate, applications of, what could we build | `skills/brainstorm/SKILL.md` | Generate from research. Operator triages. |
 
 Flow skills define the SEQUENCE (what steps to follow).
 Domain skills define the KNOWLEDGE (what patterns and constraints apply).
