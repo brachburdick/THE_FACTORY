@@ -1,13 +1,23 @@
 """Convention evals — deterministic code checks.
 
 Migrated from .agent/evals/conventions/*.eval.md
-These run against the actual codebase, not session transcripts.
+
+SCUE-specific tests are marked with @scue_available and will be skipped
+when the SCUE project directory is absent (e.g., on a clean pipeline-only checkout).
 """
 
 import re
 from pathlib import Path
 
 import pytest
+
+ROOT = Path(__file__).resolve().parent.parent
+SCUE_ROOT = ROOT / "projects" / "DjTools" / "scue"
+
+scue_available = pytest.mark.skipif(
+    not SCUE_ROOT.exists(),
+    reason="SCUE project not available (projects/ may be gitignored or absent)",
+)
 
 
 # ── uses-dataclasses ─────────────────────────────────────────────────────
@@ -16,6 +26,7 @@ import pytest
 
 
 @pytest.mark.convention
+@scue_available
 class TestUsesDataclasses:
     """Config objects and data containers use @dataclass."""
 
@@ -60,6 +71,7 @@ class TestUsesDataclasses:
 
 
 @pytest.mark.convention
+@scue_available
 class TestNoPrintStatements:
     """Source code uses logging, not print()."""
 
@@ -98,6 +110,7 @@ class TestNoPrintStatements:
 
 
 @pytest.mark.convention
+@scue_available
 class TestTypeHintsRequired:
     """Function signatures include type hints."""
 
@@ -126,6 +139,7 @@ class TestTypeHintsRequired:
 
 
 @pytest.mark.convention
+@scue_available
 class TestNoCrossLayerImports:
     """Layer boundaries enforced — no direct cross-layer imports."""
 
@@ -168,12 +182,10 @@ class TestNoCrossLayerImports:
 
 # ── venv-python ──────────────────────────────────────────────────────────
 # Source: .agent/evals/conventions/venv-python.eval.md
-# Rule: Use .venv/bin/python, not bare python.
-# Note: This is a session-transcript eval — checks agent behavior, not code.
-# Converted to check: does SCUE have a .venv directory?
 
 
 @pytest.mark.convention
+@scue_available
 class TestVenvPython:
     """SCUE project has a properly configured virtual environment."""
 
@@ -191,6 +203,7 @@ class TestVenvPython:
 
 
 @pytest.mark.convention
+@scue_available
 class TestBeatLinkApiStyleDispatch:
     """Waveform rendering branches on style before calling style-specific methods."""
 

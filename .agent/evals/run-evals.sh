@@ -1,19 +1,21 @@
 #!/usr/bin/env bash
-# Eval runner for meta-infrastructure convention checks.
-# Usage: .agent/evals/run-evals.sh [category]
-# Categories: conventions, handoffs, skills, all (default)
+# LEGACY — .eval.md spec runner (listing only).
 #
-# This script lists all eval cases and their status.
-# Eval cases are .eval.md files describing expected agent behavior.
-# Automated execution requires integration with an LLM testing framework.
+# This script lists eval cases from .eval.md spec files. It does NOT execute tests.
+# For executable tests, use the pytest suite:
+#
+#   .venv/bin/python -m pytest evals/ -v
+#
+# The .eval.md files are reference specs. The executable implementations
+# are in evals/test_*.py (migrated during v2.0).
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CATEGORY="${1:-all}"
 
-echo "=== Meta-Infrastructure Eval Suite ==="
-echo "Date: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+echo "=== .eval.md Spec Inventory (reference only) ==="
+echo "NOTE: For executable tests, run: .venv/bin/python -m pytest evals/ -v"
 echo ""
 
 list_evals() {
@@ -30,11 +32,10 @@ list_evals() {
     [ -f "$eval_file" ] || continue
     count=$((count + 1))
     name=$(basename "$eval_file" .eval.md)
-    # Extract first "## Should:" line as description
     desc=$(grep -m1 "^## Should:" "$eval_file" 2>/dev/null | sed 's/^## Should: //' || echo "No description")
     echo "  [$count] $name — $desc"
   done
-  echo "  Total: $count eval(s)"
+  echo "  Total: $count spec(s)"
   echo ""
 }
 
@@ -48,17 +49,17 @@ case "$CATEGORY" in
   skills)
     list_evals "$SCRIPT_DIR/skills" "Skills"
     ;;
+  flows)
+    list_evals "$SCRIPT_DIR/flows" "Flows"
+    ;;
   all)
     list_evals "$SCRIPT_DIR/conventions" "Conventions"
+    list_evals "$SCRIPT_DIR/flows" "Flows"
     list_evals "$SCRIPT_DIR/handoffs" "Handoffs"
     list_evals "$SCRIPT_DIR/skills" "Skills"
     ;;
   *)
-    echo "Usage: $0 [conventions|handoffs|skills|all]" >&2
+    echo "Usage: $0 [conventions|flows|handoffs|skills|all]" >&2
     exit 1
     ;;
 esac
-
-echo "---"
-echo "To run evals against an agent, integrate with your LLM testing framework."
-echo "Each .eval.md contains input/expected/fail-if criteria for automated testing."

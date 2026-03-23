@@ -163,26 +163,20 @@ class TestSkillTriggerTable:
             assert flow in text, f"Flow routing missing {flow}"
 
     def test_all_skill_files_exist(self) -> None:
-        """Every skill referenced in the trigger table actually exists."""
+        """Every skill referenced in the root trigger table actually exists.
+
+        Only checks pipeline-level skills in root CLAUDE.md.
+        Project-specific triggers are validated by project-level tests.
+        """
         text = (ROOT / "CLAUDE.md").read_text()
         import re
         paths = re.findall(r"`([^`]+/skills?/[^`]+\.md)`", text)
-        # Trigger table uses shorthand paths. Resolve against known project locations.
-        SEARCH_ROOTS = [
-            ROOT,
-            ROOT / "projects" / "DjTools",  # scue lives here
-            ROOT / "projects",               # CRUCIBLE, Tinyshop
-        ]
         missing = []
         for path in paths:
             # Skip template paths like [project]/skills/...
             if path.startswith("["):
                 continue
-            found = False
-            for search_root in SEARCH_ROOTS:
-                if (search_root / path).exists():
-                    found = True
-                    break
-            if not found:
-                missing.append(path)
+            if (ROOT / path).exists():
+                continue
+            missing.append(path)
         assert not missing, f"Skills referenced in trigger table but missing:\n" + "\n".join(missing)

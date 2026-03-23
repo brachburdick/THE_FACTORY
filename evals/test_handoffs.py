@@ -1,6 +1,7 @@
-"""Handoff and schema evals — deterministic validation.
+"""Handoff, schema, and artifact evals — deterministic validation.
 
 Migrated from .agent/evals/handoffs/handoff-schema-valid.eval.md
+Extended with artifact bootstrap validation (tf-004).
 """
 
 import json
@@ -8,6 +9,9 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+
+ROOT = Path(__file__).resolve().parent.parent
+AGENT_DIR = ROOT / ".agent"
 
 
 # ── handoff-schema-valid ─────────────────────────────────────────────────
@@ -74,6 +78,62 @@ class TestHandoffSchemaValid:
         }
         with pytest.raises(jsonschema.ValidationError):
             jsonschema.validate(invalid_handoff, handoff_schema)
+
+
+# ── Required artifacts (tf-004) ──────────────────────────────────────────
+# Rule: .agent/ must contain bootstrapped artifacts. Missing = fail, not skip.
+
+
+@pytest.mark.handoff
+class TestRequiredArtifacts:
+    """Required pipeline artifacts exist in .agent/ directory."""
+
+    def test_runs_jsonl_exists(self) -> None:
+        """runs.jsonl must exist (bootstrapped, even if empty)."""
+        path = AGENT_DIR / "runs.jsonl"
+        assert path.exists(), (
+            "Missing .agent/runs.jsonl — bootstrap with an empty file"
+        )
+
+    def test_incidents_jsonl_exists(self) -> None:
+        """incidents.jsonl must exist (bootstrapped, even if empty)."""
+        path = AGENT_DIR / "incidents.jsonl"
+        assert path.exists(), (
+            "Missing .agent/incidents.jsonl — bootstrap with an empty file"
+        )
+
+    def test_tasks_jsonl_exists(self) -> None:
+        """tasks.jsonl must exist and contain valid JSONL."""
+        path = AGENT_DIR / "tasks.jsonl"
+        assert path.exists(), "Missing .agent/tasks.jsonl"
+        # Verify it's valid JSONL
+        for i, line in enumerate(path.read_text().splitlines()):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                json.loads(line)
+            except json.JSONDecodeError as e:
+                raise AssertionError(f"tasks.jsonl line {i+1} is not valid JSON: {e}")
+
+    def test_state_snapshot_is_valid_json(self) -> None:
+        """state-snapshot.json, if present, must be valid JSON."""
+        path = AGENT_DIR / "state-snapshot.json"
+        if not path.exists():
+            pytest.skip("No state-snapshot.json yet (written at session end)")
+        try:
+            data = json.loads(path.read_text())
+        except json.JSONDecodeError as e:
+            raise AssertionError(f"state-snapshot.json is not valid JSON: {e}")
+        # Check required fields
+        required = {"session_id", "timestamp", "branch", "modified_files"}
+        missing = required - set(data.keys())
+        assert not missing, f"state-snapshot.json missing fields: {missing}"
+
+    def test_handoff_schema_exists(self) -> None:
+        """handoff-envelope.json schema must exist."""
+        path = AGENT_DIR / "schemas" / "handoff-envelope.json"
+        assert path.exists(), "Missing .agent/schemas/handoff-envelope.json"
 
 
 # ── run-record schema ────────────────────────────────────────────────────

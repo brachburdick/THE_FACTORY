@@ -95,3 +95,40 @@ def session_transcripts(agent_dir: Path) -> list[Path]:
     if not convos.exists():
         return []
     return sorted(convos.glob("*.md"), key=lambda p: p.stat().st_size, reverse=True)
+
+
+@pytest.fixture
+def parsed_transcripts(agent_dir: Path) -> list[dict[str, Any]]:
+    """Parse conversation JSONL files into tool-call sequences.
+
+    Returns list of {"id": str, "calls": list[{"tool": str, "input_summary": str}]}.
+    Only includes sessions with >= 5 tool calls.
+    """
+    convos = agent_dir / "conversations"
+    if not convos.exists():
+        return []
+
+    transcripts = []
+    for jsonl in sorted(convos.glob("*.jsonl")):
+        if jsonl.name == "index.jsonl":
+            continue
+        calls = []
+        for line in jsonl.read_text().splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                entry = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            entry_type = entry.get("type") or entry.get("role")
+            if entry_type != "assistant":
+                continue
+            for tc in entry.get("tool_calls", []):
+                calls.append({
+                    "tool": tc.get("tool", ""),
+                    "input_summary": tc.get("input_summary", ""),
+                })
+        if len(calls) >= 5:
+            transcripts.append({"id": jsonl.stem, "calls": calls})
+    return transcripts

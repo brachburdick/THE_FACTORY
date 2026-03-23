@@ -98,8 +98,17 @@ def get_langfuse_sessions(count: int) -> list[dict[str, Any]] | None:
 
 
 def get_local_sessions(count: int) -> list[dict[str, Any]]:
-    """Pull session data from local conversation index."""
+    """Pull session data from local conversation index.
+
+    If index.jsonl is missing or stale, auto-rebuilds it via index-conversations.py.
+    Sorts by recency (mtime descending), not message count.
+    """
     index_path = CONVERSATIONS_DIR / "index.jsonl"
+
+    # Auto-rebuild index if missing or stale
+    if not index_path.exists() or _index_is_stale(index_path):
+        _rebuild_index()
+
     if not index_path.exists():
         return []
 
@@ -109,15 +118,15 @@ def get_local_sessions(count: int) -> list[dict[str, Any]]:
         if line:
             entries.append(json.loads(line))
 
-    # Sort by message count (proxy for substantiveness)
+    # Sort by recency (mtime descending, then session end time)
     entries.sort(
-        key=lambda e: e.get("user_messages", 0) + e.get("assistant_messages", 0),
+        key=lambda e: e.get("mtime", 0),
         reverse=True,
     )
 
     sessions = []
     for entry in entries[:count]:
-        sessions.append({
+        session: dict[str, Any] = {
             "source": "local",
             "session_id": entry.get("session_id", "unknown"),
             "project": entry.get("project", "unknown"),
@@ -125,9 +134,38 @@ def get_local_sessions(count: int) -> list[dict[str, Any]]:
             "assistant_messages": entry.get("assistant_messages", 0),
             "tool_calls": entry.get("tool_calls", 0) or entry.get("total_tool_calls", 0),
             "subagent_count": entry.get("subagent_count", 0),
-        })
+        }
+        # Include reads_before_edit if available from index
+        if "reads_before_edit" in entry:
+            session["scores"] = {"ramp-up-reads": entry["reads_before_edit"]}
+        sessions.append(session)
 
     return sessions
+
+
+def _index_is_stale(index_path: Path) -> bool:
+    """Check if any .jsonl transcript is newer than the index."""
+    if not index_path.exists():
+        return True
+    index_mtime = index_path.stat().st_mtime
+    for jsonl in CONVERSATIONS_DIR.glob("*.jsonl"):
+        if jsonl.name == "index.jsonl":
+            continue
+        if jsonl.stat().st_mtime > index_mtime:
+            return True
+    return False
+
+
+def _rebuild_index() -> None:
+    """Rebuild the conversation index by running index-conversations.py."""
+    import subprocess
+    indexer = ROOT / "scripts" / "index-conversations.py"
+    if indexer.exists():
+        subprocess.run(
+            [sys.executable, str(indexer)],
+            capture_output=True,
+            timeout=60,
+        )
 
 
 def score_sessions(sessions: list[dict[str, Any]]) -> dict[str, Any]:
@@ -223,8 +261,11 @@ def assess(count: int) -> None:
         sessions = get_local_sessions(count)
         if sessions:
             print(f"  Source: Local conversations ({len(sessions)} sessions)")
+            print(f"  Sampled: {', '.join(s['session_id'][:8] for s in sessions[:5])}" +
+                  (f"... +{len(sessions)-5} more" if len(sessions) > 5 else ""))
         else:
-            print("  No session data found. Run some sessions first, or configure Langfuse.")
+            print("  No session data found. Run `python scripts/index-conversations.py` first,")
+            print("  or configure Langfuse env vars.")
             return
 
     # Score

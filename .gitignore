@@ -8,3 +8,6 @@
 __pycache__/
 *.pyc
 .venv/
+
+# Hook state files (temp tracking)
+.claude/hooks/*.state

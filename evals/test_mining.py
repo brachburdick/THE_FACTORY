@@ -2,6 +2,10 @@
 
 Created from conversation mining results (support/v2/conversation-mining-results.md).
 These check that the fixes from Phase 1 are in place and working.
+
+Tests are split into two categories:
+- @pytest.mark.mining — pipeline-level checks (run always)
+- @pytest.mark.scue — SCUE-project-specific checks (skip when /projects absent)
 """
 
 import json
@@ -11,6 +15,12 @@ import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 SCUE_ROOT = ROOT / "projects" / "DjTools" / "scue"
+
+# Skip SCUE-specific tests if projects directory is absent or SCUE doesn't exist
+scue_available = pytest.mark.skipif(
+    not SCUE_ROOT.exists(),
+    reason="SCUE project not available (projects/ may be gitignored or absent)",
+)
 
 
 # ── Mining Finding #1: Session continuity ────────────────────────────────
@@ -24,10 +34,14 @@ class TestSessionContinuity:
 
     def test_state_snapshot_hook_exists(self) -> None:
         """The state-snapshot Stop hook is configured."""
-        hook_path = ROOT / ".claude" / "hooks" / "state-snapshot.sh"
-        assert hook_path.exists(), "Missing state-snapshot.sh hook"
-        assert hook_path.stat().st_mode & 0o111, "state-snapshot.sh is not executable"
+        # Accept either .sh or .py implementation
+        hook_sh = ROOT / ".claude" / "hooks" / "state-snapshot.sh"
+        hook_py = ROOT / ".claude" / "hooks" / "state-snapshot.py"
+        assert hook_sh.exists() or hook_py.exists(), "Missing state-snapshot hook (.sh or .py)"
+        hook_path = hook_py if hook_py.exists() else hook_sh
+        assert hook_path.stat().st_mode & 0o111, f"{hook_path.name} is not executable"
 
+    @scue_available
     def test_codebase_orientation_skill_exists(self) -> None:
         """SCUE codebase orientation skill exists and is referenced in trigger table."""
         skill_path = SCUE_ROOT / "skills" / "codebase-orientation.md"
@@ -40,12 +54,14 @@ class TestSessionContinuity:
             "Orientation skill missing data flow chains"
         )
 
-    def test_trigger_table_references_orientation(self) -> None:
-        """CLAUDE.md trigger table includes codebase orientation."""
-        claude_md = ROOT / "CLAUDE.md"
+    @scue_available
+    def test_scue_trigger_table_references_orientation(self) -> None:
+        """SCUE CLAUDE.md trigger table includes codebase orientation."""
+        claude_md = SCUE_ROOT / "CLAUDE.md"
+        assert claude_md.exists(), "SCUE CLAUDE.md not found"
         text = claude_md.read_text()
         assert "codebase-orientation" in text, (
-            "CLAUDE.md trigger table missing codebase-orientation entry"
+            "SCUE CLAUDE.md trigger table missing codebase-orientation entry"
         )
 
 
@@ -55,6 +71,7 @@ class TestSessionContinuity:
 
 
 @pytest.mark.mining
+@scue_available
 class TestApiReferenceDocs:
     """API reference details are present in domain skills."""
 
@@ -85,6 +102,7 @@ class TestApiReferenceDocs:
 
 
 @pytest.mark.mining
+@scue_available
 class TestZeroKnownFailures:
     """Test suite has zero pre-existing failures."""
 

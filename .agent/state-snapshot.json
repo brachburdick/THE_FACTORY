@@ -1,0 +1,69 @@
+{
+  "session_id": "1a82dd5b-61f3-467a-9a4e-8dd0585a2d5c",
+  "timestamp": "2026-03-23T23:05:12Z",
+  "project_root": "/Users/brach/Documents/THE_FACTORY",
+  "branch": "v2.1",
+  "last_commit": "5a0dd0154df7bdf3e1ae8d4f2298138528c69849 final applications of v2 changes",
+  "modified_files": [
+    ".agent/conversations/index.jsonl",
+    ".agent/evals/manifest.md",
+    ".agent/evals/run-evals.sh",
+    ".agent/tasks.jsonl",
+    ".claude/.DS_Store",
+    ".claude/hooks/git-guard.sh",
+    ".claude/settings.json",
+    ".gitignore",
+    "CLAUDE.md",
+    "evals/.DS_Store",
+    "evals/__pycache__/conftest.cpython-313-pytest-9.0.2.pyc",
+    "evals/__pycache__/test_conventions.cpython-313-pytest-9.0.2.pyc",
+    "evals/__pycache__/test_flows.cpython-313-pytest-9.0.2.pyc",
+    "evals/__pycache__/test_handoffs.cpython-313-pytest-9.0.2.pyc",
+    "evals/__pycache__/test_mining.cpython-313-pytest-9.0.2.pyc",
+    "evals/conftest.py",
+    "evals/test_conventions.py",
+    "evals/test_flows.py",
+    "evals/test_handoffs.py",
+    "evals/test_mining.py"
+  ],
+  "staged_files": [],
+  "active_tasks": [
+    {
+      "id": "scue-m3-resume",
+      "status": "blocked",
+      "taskType": "feature",
+      "summary": "SCUE: M3 Cue Stream \u2014 ON HOLD per user preference. Unblocked technically (FE screens + research done) but deferred."
+    },
+    {
+      "id": "scue-m7-event-detection",
+      "status": "in_progress",
+      "taskType": "feature",
+      "summary": "SCUE: M7 Event Detection \u2014 spec drafted, awaiting operator approval before implementation. 8 phases: framework, features, heuristic drums, risers/fallers, stabs, storage, RF classifier, training pipeline"
+    },
+    {
+      "id": "tinyshop-designer",
+      "status": "pending",
+      "taskType": "feature",
+      "summary": "Tinyshop: Designer session for UI tasks (TASK-011, 012, 013, 019) \u2014 App Shell, Dashboard, Launch Drawer, Welcome Screen"
+    },
+    {
+      "id": "tinyshop-phase1",
+      "status": "pending",
+      "taskType": "feature",
+      "summary": "Tinyshop: Phase 1 Foundation \u2014 TASK-001 (scaffold), TASK-002 (types), TASK-003 (SQLite) \u2014 no designer dependency"
+    },
+    {
+      "id": "tinyshop-phase2",
+      "status": "blocked",
+      "taskType": "feature",
+      "summary": "Tinyshop: Phase 2 Backend \u2014 TASK-004 through TASK-010 (Artifact Engine, SSE, APIs, scanner)"
+    },
+    {
+      "id": "tinyshop-phase3",
+      "status": "blocked",
+      "taskType": "feature",
+      "summary": "Tinyshop: Phase 3 Frontend \u2014 TASK-011 through TASK-023 (UI components, launch flow, edge cases)"
+    }
+  ],
+  "working_directory": "/Users/brach/Documents/THE_FACTORY"
+}

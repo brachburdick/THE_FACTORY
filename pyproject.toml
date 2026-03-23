@@ -15,10 +15,14 @@ observability = [
 
 [tool.pytest.ini_options]
 testpaths = ["evals"]
+# Canonical eval command: .venv/bin/python -m pytest evals/ -v
+# addopts disables ambient plugins that can break deterministic runs
+addopts = "-p no:randomly -p no:xdist -p no:repeat -p no:rerunfailures --override-ini=asyncio_mode=auto"
 markers = [
     "convention: deterministic code convention checks",
     "flow: LLM-as-judge flow compliance checks",
     "handoff: handoff schema validation checks",
     "skill: skill triggering checks",
     "mining: eval cases derived from conversation mining",
+    "behavioral: checks actual agent behavior from session transcripts",
 ]

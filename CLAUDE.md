@@ -8,19 +8,11 @@
 
 ## Trigger Table
 
+Pipeline-level skills. Project-specific triggers live in each project's own CLAUDE.md.
+
 | Task Pattern | Skill Location | Notes |
 |---|---|---|
-| SCUE session start / any SCUE work | `projects/DjTools/scue/skills/codebase-orientation.md` | Load first. File map, data flows, gotchas. |
-| Audio analysis / beatgrid / rekordbox | `projects/DjTools/scue/skills/audio-analysis.md` | Pioneer/Serato metadata |
-| Beat-link bridge / Pro DJ Link | `projects/DjTools/scue/skills/beat-link-bridge.md` | Lifecycle, messages, API reference |
-| Pioneer hardware / CDJ / XDJ / DJM | `projects/DjTools/scue/skills/pioneer-hardware.md` | Hardware variants, device specifics |
-| Frontend / React / TypeScript / Zustand | `projects/DjTools/scue/skills/react-typescript-frontend.md` | SCUE component patterns |
-| Python / FastAPI / asyncio backend | `projects/DjTools/scue/skills/python-fastapi.md` | Routers, testing, async patterns |
 | Contract integrity / cross-layer | `[project]/skills/contract-integrity.md` | Field preservation, PRODUCER/CONSUMER |
-| E2B sandbox / code execution | `projects/CRUCIBLE/skills/e2b-sandbox.md` | SDK patterns, TTL |
-| Langfuse / tracing | `projects/CRUCIBLE/skills/langfuse-tracing.md` | SDK gotchas, trace patterns |
-| TypeScript / Node.js / ESM | `projects/CRUCIBLE/skills/typescript-node.md` | Module resolution |
-| Anthropic SDK / Claude API | `projects/Tinyshop/skills/anthropic-sdk.md` | SDK usage |
 | Handoff between domains | `skills/handoff/SKILL.md` | JSON Schema envelope |
 | Project scaffolding | `skills/project-scaffold/SKILL.md` | .agent/ structure |
 | Brainstorm / ideation | `skills/brainstorm/SKILL.md` | Research→candidates |
@@ -42,8 +34,10 @@ Classify the task, load the flow. Don't blend flows.
 - **End:** Hooks enforce landing procedure. State snapshot written automatically.
 
 ## What Hooks Enforce (don't duplicate in prose)
-- Git guard: no commits to main, no force-push, no reset --hard
-- State snapshot: branch, commit, tasks, modified files persisted at session end
+- Git guard: no commits to main, no force-push, no reset --hard (fail-closed, no jq dependency)
+- Fix-attempt tracker: blocks after 3 source edits without running tests
+- State snapshot: branch, commit, tasks, modified files persisted at session end (valid JSON via Python)
+- Audit run record: warns if no run record written during session
 - Langfuse trace: session metrics sent to Langfuse (when configured)
 
 ## What's NOT Enforced by Hooks (still important)
@@ -54,7 +48,8 @@ Classify the task, load the flow. Don't blend flows.
 
 ## Eval Suite
 Run: `.venv/bin/python -m pytest evals/ -v`
-42 tests covering conventions, flows, handoffs, and mining-derived regression checks.
+~48 tests: conventions, flows, handoffs, mining regressions, behavioral checks.
+SCUE-specific tests auto-skip when /projects absent.
 
 ## Workspace Layout
 ```
@@ -78,8 +73,13 @@ THE_FACTORY/
 └── support/               ← archives, research, migration docs
 ```
 
+## Experiment Framework
+Run: `python scripts/experiment.py --list-tasks` / `--list-variants`
+Compare: `python scripts/experiment.py --task tasks/fix-short-track-bpm.py --variants variants/baseline.yaml variants/minimal.yaml`
+Assess: `python scripts/assess.py --last 20`
+
 ## Version
-- **Current:** v2.0.0 (2026-03-23)
-- **Previous:** v1.9.2 → v1.9 → v1.8 (archived in `support/`)
+- **Current:** v2.1.0 (2026-03-23)
+- **Previous:** v2.0 → v1.9.2 → v1.9 → v1.8 (archived in `support/`)
 - **Migration plan:** `.claude/plans/v2-migration.md`
 - **Mining results:** `support/v2/conversation-mining-results.md`

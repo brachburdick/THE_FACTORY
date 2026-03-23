@@ -1,14 +1,18 @@
 """
-Inspect solver: Claude Code with skills.
+Inspect solvers for THE_FACTORY experiments.
 
-Wraps a Claude Code invocation as an Inspect solver for experiments.
-Uses the Claude API directly with the SKILL.md content as system prompt.
+Two solvers:
+1. claude_code_with_skills — Uses Claude with flow skills and domain knowledge
+   as system prompt context. This is the "real" THE_FACTORY workflow.
+2. bare_prompt — Minimal system prompt, the control group.
+
+For live pipeline mode (tf-008), claude_code_with_skills injects the actual
+SKILL.md content, simulating what happens in a real Claude Code session.
 """
 
 from pathlib import Path
 
-from inspect_ai.solver import solver, TaskState, Generate, generate, system_message
-
+from inspect_ai.solver import solver, TaskState, Generate
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -28,17 +32,24 @@ def claude_code_with_skills(
 ):
     """Solver that uses Claude with THE_FACTORY's skill system.
 
+    Injects flow skill + domain skills as system prompt context,
+    simulating a real Claude Code session with loaded skills.
+
     Args:
         flow: Which flow skill to load (debug-flow, feature-flow, refactor-flow)
         domain_skills: Additional domain skill paths to load
     """
-    # Build system prompt from flow + domain skills
     parts = []
+
+    # Load root constitution
+    claude_md = _load_skill("CLAUDE.md")
+    if claude_md:
+        parts.append(f"# Pipeline Constitution\n\n{claude_md}")
 
     # Load flow skill
     flow_content = _load_skill(f".claude/skills/{flow}/SKILL.md")
     if flow_content:
-        parts.append(f"# Flow: {flow}\n\n{flow_content}")
+        parts.append(f"# Active Flow: {flow}\n\n{flow_content}")
 
     # Load domain skills
     for skill_path in domain_skills or []:
@@ -49,13 +60,11 @@ def claude_code_with_skills(
     combined_prompt = "\n\n---\n\n".join(parts)
 
     async def solve(state: TaskState, generate: Generate) -> TaskState:
-        # Inject skill content as system message
         if combined_prompt:
             state.messages.insert(0, {
                 "role": "system",
                 "content": combined_prompt,
             })
-        # Generate response
         return await generate(state)
 
     return solve
@@ -64,7 +73,6 @@ def claude_code_with_skills(
 @solver
 def bare_prompt():
     """Solver with minimal system prompt — the control group."""
-
     async def solve(state: TaskState, generate: Generate) -> TaskState:
         state.messages.insert(0, {
             "role": "system",
