@@ -57,6 +57,16 @@ Human confirmation required before proceeding.
 
 **Gate:** Implementation plan exists with ordered steps and file list.
 
+## Phase 2.5: Pre-Implementation Checklist
+**Goal:** Avoid re-implementing work that already exists.
+**Steps:**
+1. For each file in the plan's scope, check: does it already contain the expected changes?
+2. If code already exists for a planned step, mark that step as done and verify it works.
+3. Check `.agent/state-snapshot.json` — a prior session may have partially completed this work.
+
+This phase was added because conversation mining found agents spending ~40% of context
+re-reading code only to discover tasks were already implemented.
+
 ## Phase 3: Implement
 **Goal:** Build the feature according to the plan.
 **Steps:**
@@ -95,6 +105,12 @@ Human confirmation required before proceeding.
    note it in the relevant domain skill's `references/` directory.
 5. If the spec changed during implementation, update the spec to match reality
    and record the change in the spec's Change Log.
+
+## Subagent Guidance
+When launching parallel Explore subagents for research or exploration:
+- Give each agent a **specific file scope** (e.g., "read only `bridge/` files", "read only `frontend/src/components/`"). Do NOT launch two agents with overlapping directories.
+- If a codebase orientation skill exists for the project, load it first — it eliminates most exploratory reads.
+- Check `.agent/state-snapshot.json` at session start. It contains the branch, last commit, active tasks, and modified files from the prior session. Use it to skip re-exploration.
 
 ## Negative Constraints — Do NOT:
 - Do NOT start implementing before the spec is confirmed by the human.

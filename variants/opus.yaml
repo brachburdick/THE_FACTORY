@@ -1,0 +1,15 @@
+# Opus variant: More capable model with same skills.
+# Answers: "is the model upgrade worth the cost premium?"
+
+name: opus
+description: Claude Opus with full skill system
+model: claude-opus-4-6
+solver: claude_code_with_skills
+solver_args:
+  flow: debug-flow
+  domain_skills:
+    - projects/DjTools/scue/skills/codebase-orientation.md
+    - projects/DjTools/scue/skills/beat-link-bridge.md
+orchestration: single-agent
+budget: 100000
+ttl: 300

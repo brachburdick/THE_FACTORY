@@ -67,6 +67,12 @@ description: >
 5. If the fix reveals a broader architectural issue, file a separate investigation task.
    Do NOT scope-creep the current fix.
 
+## Subagent Guidance
+When launching parallel Explore subagents for investigation:
+- Give each agent a **specific file scope** (e.g., "read only `bridge/` files", "read only `frontend/src/components/`"). Do NOT launch two agents with overlapping directories.
+- If a codebase orientation skill exists for the project, load it first — it eliminates most exploratory reads.
+- Check `.agent/state-snapshot.json` at session start. It contains the branch, last commit, active tasks, and modified files from the prior session. Use it to skip re-exploration.
+
 ## Negative Constraints — Do NOT:
 - Do NOT refactor while fixing. Refactoring is a separate task type.
 - Do NOT add features while fixing. Feature work is a separate task type.

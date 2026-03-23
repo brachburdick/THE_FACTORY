@@ -59,6 +59,12 @@ description: >
    established a service boundary), document it in the relevant domain skill or
    project CLAUDE.md gotchas section.
 
+## Subagent Guidance
+When launching parallel Explore subagents:
+- Give each agent a **specific file scope** (e.g., "read only files in `src/utils/`", "read only test files"). Do NOT launch two agents with overlapping directories.
+- If a codebase orientation skill exists for the project, load it first — it eliminates most exploratory reads.
+- Check `.agent/state-snapshot.json` at session start for prior session context.
+
 ## Negative Constraints — Do NOT:
 - Do NOT change behavior during a refactor. This is the cardinal rule.
 - Do NOT skip the snapshot phase. Without a baseline, you can't verify preservation.

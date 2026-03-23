@@ -1,0 +1,1 @@
+{"rank": 1, "category": "pipeline", "title": "Reduce subagent count per session", "description": "Average 5.7 subagents/session. Mining baseline was ~5. Consider tightening subagent scope guidance.", "suggested_type": "skill", "status": "pending", "timestamp": "2026-03-23T18:26:11.084506Z"}
