@@ -1,0 +1,15 @@
+# Baseline variant: Claude with THE_FACTORY's full skill system.
+# This is the current way you work — flow routing + domain skills.
+
+name: baseline
+description: Claude with debug/feature/refactor flows and domain skills
+model: claude-sonnet-4-20250514
+solver: claude_code_with_skills
+solver_args:
+  flow: debug-flow
+  domain_skills:
+    - projects/DjTools/scue/skills/codebase-orientation.md
+    - projects/DjTools/scue/skills/beat-link-bridge.md
+orchestration: single-agent
+budget: 100000
+ttl: 300

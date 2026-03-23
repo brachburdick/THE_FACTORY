@@ -1,0 +1,12 @@
+# Minimal variant: Claude with a bare system prompt.
+# The control group — no skills, no flows, no domain knowledge.
+# Answers: "how much do the skills actually help?"
+
+name: minimal
+description: Claude with bare system prompt (no skills)
+model: claude-sonnet-4-20250514
+solver: bare_prompt
+solver_args: {}
+orchestration: single-agent
+budget: 100000
+ttl: 300

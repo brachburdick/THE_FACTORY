@@ -1,5 +1,25 @@
 # Meta-Infrastructure Version History
 
+## v2.0.0 (2026-03-23) — Experimentation Platform
+
+- **Architecture:** Three-layer (Experiment / Execution / Observability). Stop reinventing tracing, evals, enforcement. Keep custom: project-definition, operator decisions, flow routing, skills, portfolio scaffolding.
+- **Evidence base:** Conversation mining of 20 sessions × 3 lenses. Baselines: 25% waste, 75% bug catch rate, 15-30 reads before first edit.
+- **Hooks:** Deterministic enforcement via Claude Code hooks (git-guard, state-snapshot, langfuse-trace). Prose rules replaced by executable enforcement.
+- **Eval suite:** 42 executable pytest tests (conventions, flows, handoffs, mining-derived regression). Run with `.venv/bin/python -m pytest evals/ -v`.
+- **Experiment framework:** Inspect AI for task definitions, solvers, scorers, variant comparison. 2 tasks, 2 scorers, 2 solvers, 3 variants.
+- **Improvement loop:** `scripts/assess.py` pulls session data (Langfuse or local), scores against baselines, generates improvement candidates.
+- **Constitution:** CLAUDE.md slimmed from 153 to 78 lines. Governance docs, forge, 9 templates archived.
+- **Quick wins from mining:** Codebase orientation skill (1500 wasted tool calls eliminated), API reference docs (7 API misuse bugs addressed), zero known failures gate (393 pass, 0 fail), subagent dedup guidance, pre-implementation checklist.
+- **Tool stack:** Inspect AI (experiments), Langfuse (traces), DeepEval (evals), Claude Code (hooks/skills/subagents). All OSS or free tier.
+- **Builds on:** v1.9.2 (flow skills + routing + structured state)
+
+### Migration Artifacts
+- Mining results: `support/v2/conversation-mining-results.md`
+- Migration plan: `.claude/plans/v2-migration.md`
+- Archived v1 infra: `support/v2-archive/`
+
+---
+
 ## v1.9.2 (2026-03-20) — Observability, Intent Capture, Dispatch Quality
 
 - **Architecture:** Unchanged (one operator agent + skills + flow routing)

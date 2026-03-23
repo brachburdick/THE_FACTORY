@@ -1,0 +1,184 @@
+"""Mining-derived evals — regression tests for the top 5 failure patterns.
+
+Created from conversation mining results (support/v2/conversation-mining-results.md).
+These check that the fixes from Phase 1 are in place and working.
+"""
+
+import json
+from pathlib import Path
+
+import pytest
+
+ROOT = Path(__file__).resolve().parent.parent
+SCUE_ROOT = ROOT / "projects" / "DjTools" / "scue"
+
+
+# ── Mining Finding #1: Session continuity ────────────────────────────────
+# Problem: 10% ramp-up tax, 1500 wasted tool calls re-exploring SCUE.
+# Fix: State snapshot hook + codebase orientation skill.
+
+
+@pytest.mark.mining
+class TestSessionContinuity:
+    """Infrastructure for session-to-session continuity exists."""
+
+    def test_state_snapshot_hook_exists(self) -> None:
+        """The state-snapshot Stop hook is configured."""
+        hook_path = ROOT / ".claude" / "hooks" / "state-snapshot.sh"
+        assert hook_path.exists(), "Missing state-snapshot.sh hook"
+        assert hook_path.stat().st_mode & 0o111, "state-snapshot.sh is not executable"
+
+    def test_codebase_orientation_skill_exists(self) -> None:
+        """SCUE codebase orientation skill exists and is referenced in trigger table."""
+        skill_path = SCUE_ROOT / "skills" / "codebase-orientation.md"
+        assert skill_path.exists(), "Missing codebase-orientation.md skill"
+        text = skill_path.read_text()
+        assert "File-to-Responsibility" in text or "File Map" in text, (
+            "Orientation skill missing file-to-responsibility map"
+        )
+        assert "Data Flow" in text or "Data flow" in text, (
+            "Orientation skill missing data flow chains"
+        )
+
+    def test_trigger_table_references_orientation(self) -> None:
+        """CLAUDE.md trigger table includes codebase orientation."""
+        claude_md = ROOT / "CLAUDE.md"
+        text = claude_md.read_text()
+        assert "codebase-orientation" in text, (
+            "CLAUDE.md trigger table missing codebase-orientation entry"
+        )
+
+
+# ── Mining Finding #2: API misuse from missing reference docs ────────────
+# Problem: #1 bug type (7 instances). beat-link API repeatedly researched.
+# Fix: API reference sections in beat-link-bridge.md and pioneer-hardware.md.
+
+
+@pytest.mark.mining
+class TestApiReferenceDocs:
+    """API reference details are present in domain skills."""
+
+    def test_beat_link_bridge_has_api_reference(self) -> None:
+        """beat-link-bridge skill contains API reference for CdjStatus."""
+        skill_path = SCUE_ROOT / "skills" / "beat-link-bridge.md"
+        assert skill_path.exists()
+        text = skill_path.read_text()
+        assert "CdjStatus" in text, "Missing CdjStatus API reference"
+        assert "getEffectiveTempo" in text, "Missing getEffectiveTempo docs"
+        assert "Finder" in text and "order" in text.lower(), (
+            "Missing Finder start order documentation"
+        )
+
+    def test_pioneer_hardware_has_device_specifics(self) -> None:
+        """pioneer-hardware skill contains XDJ-AZ and Opus Quad specifics."""
+        skill_path = SCUE_ROOT / "skills" / "pioneer-hardware.md"
+        assert skill_path.exists()
+        text = skill_path.read_text()
+        assert "XDJ-AZ" in text, "Missing XDJ-AZ specifics"
+        assert "BLUE" in text, "Missing BLUE waveform style documentation"
+        assert "Opus Quad" in text or "DLP" in text, "Missing DLP device documentation"
+
+
+# ── Mining Finding #3: Normalized test failures ──────────────────────────
+# Problem: Broken tests carried across sessions, layer1 tests skipped.
+# Fix: Zero known failures gate.
+
+
+@pytest.mark.mining
+class TestZeroKnownFailures:
+    """Test suite has zero pre-existing failures."""
+
+    def test_scue_tests_all_pass(self) -> None:
+        """SCUE test suite runs with zero failures."""
+        import subprocess
+
+        result = subprocess.run(
+            [str(SCUE_ROOT / ".venv" / "bin" / "python"), "-m", "pytest", "tests/", "-q",
+             "--tb=no", "--no-header"],
+            cwd=str(SCUE_ROOT),
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        # Accept 0 exit code (all passed/skipped)
+        assert result.returncode == 0, (
+            f"SCUE tests have failures (exit code {result.returncode}):\n"
+            f"{result.stdout[-500:]}\n{result.stderr[-500:]}"
+        )
+
+
+# ── Mining Finding #4: Redundant subagent exploration ────────────────────
+# Problem: Up to 29 subagents reading overlapping files.
+# Fix: Subagent dedup guidance in flow skills.
+
+
+@pytest.mark.mining
+class TestSubagentGuidance:
+    """Flow skills contain subagent scope deduplication guidance."""
+
+    FLOW_SKILLS = [
+        ROOT / ".claude" / "skills" / "debug-flow" / "SKILL.md",
+        ROOT / ".claude" / "skills" / "feature-flow" / "SKILL.md",
+        ROOT / ".claude" / "skills" / "refactor-flow" / "SKILL.md",
+    ]
+
+    def test_all_flows_have_subagent_guidance(self) -> None:
+        """Every flow skill has a Subagent Guidance section."""
+        for skill_path in self.FLOW_SKILLS:
+            assert skill_path.exists(), f"Missing flow skill: {skill_path}"
+            text = skill_path.read_text()
+            assert "Subagent Guidance" in text, (
+                f"{skill_path.parent.name} flow missing Subagent Guidance section"
+            )
+            assert "specific file scope" in text, (
+                f"{skill_path.parent.name} flow missing file scope guidance"
+            )
+
+
+# ── Mining Finding #5: Feature completion status tracking ────────────────
+# Problem: Agents waste time implementing features that already exist.
+# Fix: Pre-implementation checklist in feature-flow.
+
+
+@pytest.mark.mining
+class TestPreImplementationChecklist:
+    """Feature flow includes pre-implementation checklist."""
+
+    def test_feature_flow_has_checklist(self) -> None:
+        """feature-flow SKILL.md includes Phase 2.5 pre-implementation checklist."""
+        skill_path = ROOT / ".claude" / "skills" / "feature-flow" / "SKILL.md"
+        text = skill_path.read_text()
+        assert "Pre-Implementation" in text, (
+            "feature-flow missing Phase 2.5 Pre-Implementation Checklist"
+        )
+        assert "already" in text.lower() and "exist" in text.lower(), (
+            "Pre-implementation checklist doesn't check for already-existing work"
+        )
+
+
+# ── Hooks infrastructure ─────────────────────────────────────────────────
+
+
+@pytest.mark.mining
+class TestHooksInfrastructure:
+    """Claude Code hooks are configured and executable."""
+
+    def test_settings_json_has_hooks(self) -> None:
+        """settings.json has hook configuration."""
+        settings_path = ROOT / ".claude" / "settings.json"
+        assert settings_path.exists(), "Missing .claude/settings.json"
+        settings = json.loads(settings_path.read_text())
+        assert "hooks" in settings, "settings.json missing hooks configuration"
+        assert "Stop" in settings["hooks"], "No Stop hooks configured"
+        assert "PreToolUse" in settings["hooks"], "No PreToolUse hooks configured"
+
+    def test_git_guard_hook_exists(self) -> None:
+        """git-guard hook exists and is executable."""
+        hook = ROOT / ".claude" / "hooks" / "git-guard.sh"
+        assert hook.exists(), "Missing git-guard.sh"
+        assert hook.stat().st_mode & 0o111, "git-guard.sh not executable"
+
+    def test_langfuse_hook_exists(self) -> None:
+        """langfuse-trace hook exists."""
+        hook = ROOT / ".claude" / "hooks" / "langfuse-trace.py"
+        assert hook.exists(), "Missing langfuse-trace.py"
