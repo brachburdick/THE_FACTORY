@@ -73,7 +73,7 @@ THE_FACTORY/
 │   └── schemas/           ← JSON schemas
 ├── evals/                 ← executable eval suite (pytest)
 ├── skills/                ← portfolio-level skills
-├── projects/              ← CRUCIBLE, DjTools/scue, Tinyshop
+├── projects/              ← CRUCIBLE, DjTools/scue, Tinyshop, enable/
 ├── templates/             ← spec, plan, handoff, tasks
 └── support/               ← archives, research, migration docs
 ```

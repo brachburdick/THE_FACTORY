@@ -88,9 +88,14 @@ re-reading code only to discover tasks were already implemented.
 4. If the feature has a UI component, describe what manual verification the human
    should perform.
 
+5. **Dependency audit:** If you added new `import` statements, verify they're declared in
+   `pyproject.toml` (Python) or `package.json` (JS/TS). Transitive deps work in dev but crash in fresh envs.
+6. **Capacity documentation:** If the feature accepts unbounded input (batch upload, bulk import),
+   document the max tested batch size and expected behavior at the limit.
+
 **Git:** Commit tests: `test: {what is covered}`.
 
-**Gate:** All new tests pass. No regressions in existing tests.
+**Gate:** All new tests pass. No regressions in existing tests. New imports are declared dependencies.
 
 ## Phase 5: Verify & Close
 **Steps:**
@@ -111,6 +116,22 @@ When launching parallel Explore subagents for research or exploration:
 - Give each agent a **specific file scope** (e.g., "read only `bridge/` files", "read only `frontend/src/components/`"). Do NOT launch two agents with overlapping directories.
 - If a codebase orientation skill exists for the project, load it first — it eliminates most exploratory reads.
 - Check `.agent/state-snapshot.json` at session start. It contains the branch, last commit, active tasks, and modified files from the prior session. Use it to skip re-exploration.
+
+## Session Scope Budgeting
+Before starting Phase 3, estimate whether the feature fits in one session:
+- If the spec + plan + implementation + tests + verify will exceed context, split into sub-tasks NOW.
+- Prefer splitting at layer boundaries (backend first, frontend second) or by phase (spec+plan in session 1, implement in session 2).
+- A feature that requires changes across 3+ layers and includes bug fixes discovered along the way will almost certainly exhaust context. Plan for it.
+
+## Feature Branch Guidance
+- Start feature work on a feature branch: `git checkout -b feature/{name}`.
+- If a bug is discovered mid-feature that is urgent: commit current feature work, fix the bug on the feature branch (not main), then continue. Do NOT switch to main for the fix — that causes branch abandonment.
+- If the bug is unrelated to the feature, note it as a follow-up task rather than fixing it inline.
+
+## Greenfield Variant
+For projects scaffolded from scratch in a single session (e.g., a new tool or utility), the phase-by-phase commit protocol creates overhead without proportional value. In this case:
+- Commit per-tier (e.g., "scaffold: backend models + API" then "scaffold: frontend components") rather than per-phase.
+- Still run the full test + verify cycle before closing.
 
 ## Negative Constraints — Do NOT:
 - Do NOT start implementing before the spec is confirmed by the human.

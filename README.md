@@ -2,25 +2,24 @@
 
 THE_FACTORY is a reusable operating system for software projects run with AI agents.
 
-## Operating Model (v1.9.2)
+## Operating Model (v2.0)
 
-One default operator agent. Specialist behavior via skills, not standing roles.
+One operator agent. Specialist behavior via skills, not standing roles.
+Deterministic enforcement via Claude Code hooks, not prompt discipline.
 
-- **CLAUDE.md** — hot runtime constitution (always loaded, ≤200 lines)
+- **CLAUDE.md** — hot runtime constitution (always loaded, ≤100 lines)
 - **Flow skills** — predefined step sequences loaded by task type (debug, feature, refactor)
 - **Domain skills** — project-specific knowledge loaded by trigger table
-- **Structured state** — task tracking in `.agent/tasks.jsonl`, not markdown session files
-- **Eval-first improvement** — every repeated failure becomes a test case before it becomes a rule
+- **Hooks** — deterministic enforcement (git guard, state snapshot, trace)
+- **Eval suite** — executable pytest tests for conventions, flows, and regression
+- **Experiment framework** — Inspect AI + assess.py for variant testing and improvement
 
 ## Root Files
 
 | File | Purpose |
 |------|---------|
 | `CLAUDE.md` | Constitution: core principles, trigger table, flow routing, session protocol |
-| `OPERATOR_PROTOCOL.md` | Governance: artifact schemas, review cadence, rollout policy, logging |
 | `INIT.md` | Onboarding: routes a fresh agent into the current model |
-| `IMPLEMENTATION_PROMPT.md` | Scaffolding: bootstraps or syncs a project's `.agent/` and skill infrastructure |
-| `PROTOCOL_REVIEW_PROMPT.md` | Review: evidence-driven protocol improvement process |
 | `PROTOCOL_IMPROVEMENTS.md` | Backlog: running log of protocol-level observations |
 
 ## Workspace Layout
@@ -28,7 +27,6 @@ One default operator agent. Specialist behavior via skills, not standing roles.
 ```
 THE_FACTORY/
 ├── CLAUDE.md              ← constitution (hot, always loaded)
-├── OPERATOR_PROTOCOL.md   ← governance layer
 ├── INIT.md                ← onboarding entry point
 ├── PROTOCOL_IMPROVEMENTS.md ← canonical backlog
 ├── .agent/
@@ -36,25 +34,29 @@ THE_FACTORY/
 │   ├── tasks.jsonl        ← root-level task tracker
 │   ├── runs.jsonl         ← run telemetry ledger
 │   ├── incidents.jsonl    ← structured incident log
-│   ├── reviews/           ← experiential review scorecards
-│   ├── evals/             ← eval suite + manifest
-│   ├── schemas/           ← JSON schemas (handoff envelope, run, incident, scorecard)
-│   └── metrics/           ← metric definitions and targets
-├── .claude/skills/        ← flow skills (debug, feature, refactor)
+│   ├── state-snapshot.json← session continuity (written by hook)
+│   ├── evals/             ← eval specs (.eval.md)
+│   └── schemas/           ← JSON schemas
+├── .claude/
+│   ├── hooks/             ← deterministic enforcement (git-guard, state-snapshot, langfuse-trace)
+│   ├── settings.json      ← hook wiring
+│   ├── skills/            ← flow skills (debug, feature, refactor)
+│   └── plans/             ← migration plans
+├── evals/                 ← executable eval suite (pytest)
+├── scripts/               ← assess.py, experiment.py
 ├── skills/                ← portfolio-level domain skills
-├── templates/             ← canonical artifact templates
 ├── projects/
 │   ├── CRUCIBLE/
 │   ├── DjTools/
 │   └── Tinyshop/
-└── support/               ← archived reviews, historical reference
+└── support/               ← archives, research, migration docs
 ```
 
 ## Quick Start
 
 1. **Human:** Read this file.
 2. **Fresh agent:** Give it `INIT.md`. It routes into the current model.
-3. **New project:** Use `IMPLEMENTATION_PROMPT.md` to scaffold `.agent/`, skills, and project CLAUDE.md.
+3. **New project:** Use `skills/project-scaffold/SKILL.md` to scaffold `.agent/`, skills, and project CLAUDE.md.
 4. **Existing project:** Load CLAUDE.md → classify task → load flow skill → execute.
 
 ## Core Idea
@@ -67,15 +69,17 @@ Flow skills define the **sequence** (what steps to follow).
 Domain skills define the **knowledge** (what patterns and constraints apply).
 Both load simultaneously. The flow drives the steps; the domain informs decisions.
 
-## Protocol Evolution
+## Improvement Loop
 
-- Protocol changes require evidence (run records, incident logs, eval results)
-- Classify failures before proposing fixes: specification, handoff, or verification layer
-- Fix scaffolds before swapping models
-- See `PROTOCOL_REVIEW_PROMPT.md` for the full review process
+1. Run `scripts/assess.py --last 20` to score recent sessions against baselines
+2. Run `pytest evals/ -v` to check convention/flow drift
+3. Triage improvement candidates (accept/defer/reject)
+4. For accepted improvements: edit the relevant skill or hook, add an eval case, re-run evals
+5. For A/B testing: create a variant YAML, run with `scripts/experiment.py`
 
 ## Version
 
-- **Current:** v1.9.2 (2026-03-20)
-- **Previous:** v1.9.1 → v1.9 → v1.8 (archived at `support/v1.8/`)
-- **Migration docs:** `support/v1.9/`
+- **Current:** v2.0.0 (2026-03-23)
+- **Previous:** v1.9.2 → v1.9 → v1.8 (archived in `support/`)
+- **Migration plan:** `.claude/plans/v2-migration.md`
+- **Mining results:** `support/v2/conversation-mining-results.md`

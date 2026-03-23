@@ -73,6 +73,12 @@ When launching parallel Explore subagents for investigation:
 - If a codebase orientation skill exists for the project, load it first — it eliminates most exploratory reads.
 - Check `.agent/state-snapshot.json` at session start. It contains the branch, last commit, active tasks, and modified files from the prior session. Use it to skip re-exploration.
 
+## Research Heuristic: Version Delta First
+When investigating why a reference implementation has a capability that your project lacks,
+the first research question should always be: **"What dependency versions does the reference
+use vs. what we use?"** Version delta is the highest-signal diagnostic. This heuristic would
+have cut a 4-agent-hour research session to ~30 minutes (beat-link 8.0.0 vs 8.1.0-SNAPSHOT).
+
 ## Negative Constraints — Do NOT:
 - Do NOT refactor while fixing. Refactoring is a separate task type.
 - Do NOT add features while fixing. Feature work is a separate task type.
@@ -82,3 +88,5 @@ When launching parallel Explore subagents for investigation:
 - Do NOT modify files outside the failure path unless the fix requires it.
 - Do NOT change test assertions to make them pass. Fix the code, not the tests.
 - Do NOT close the task without a run record in `.agent/runs.jsonl`.
+- Do NOT use docs as source-of-truth for QA verification. Verify against code (types, endpoint responses, test output). Docs may be stale.
+- Do NOT assume `git add` will include new source files — check `.gitignore` patterns first. If a new `.ts`/`.tsx`/`.py` file doesn't stage, the gitignore may be too broad.
