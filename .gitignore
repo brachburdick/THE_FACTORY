@@ -1,2 +1,10 @@
 # Ignore the projects directory and its contents
 /projects/
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+.venv/
