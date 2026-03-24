@@ -1,0 +1,72 @@
+[
+  {
+    "batch": 1,
+    "sessions": [
+      "1a82dd5b-61f3-467a-9a4e-8dd0585a2d5c",
+      "7f03b0df-d77f-42e7-a58c-12a4c1bbcf31",
+      "99ffb4e3-5f81-4ad2-98b8-02944b5310eb",
+      "1b2da80d-5e75-48b3-bb6b-0dd45953cd45",
+      "0c73b5f7-7b6c-4379-9b19-808064e3d6c8"
+    ],
+    "projects": [
+      "CRUCIBLE",
+      "SCUE",
+      "THE_FACTORY"
+    ]
+  },
+  {
+    "batch": 2,
+    "sessions": [
+      "63561724-20a7-4d5e-a4a1-cdd4ac8644ac",
+      "495b5994-e258-4e14-8765-447a5dfd615a",
+      "9a419670-41fa-4f55-aff4-bc39c4f1d0f9",
+      "bca50125-1675-44b8-8595-f703a3ecc892",
+      "12c56fb3-8fe0-4922-964c-e8c2f4095ea1"
+    ],
+    "projects": [
+      "CRUCIBLE",
+      "SCUE",
+      "THE_FACTORY"
+    ]
+  },
+  {
+    "batch": 3,
+    "sessions": [
+      "c3838b2f-0517-40dd-8724-07d8cbb2eed2",
+      "588a6128-9d0b-464e-b18d-ee464b047923",
+      "48a05e83-3ad2-49cb-9eb0-1dcc79c06361",
+      "4733ad72-8370-41e7-aed1-ac005e57a96a",
+      "16207a75-ec4c-44dd-a28b-9f1153148b06"
+    ],
+    "projects": [
+      "THE_FACTORY"
+    ]
+  },
+  {
+    "batch": 4,
+    "sessions": [
+      "8794e968-2a15-44d1-a63b-e4793f5a7f4f",
+      "325993fe-a1a2-4f45-b544-50cde3a9a023",
+      "791de3a3-d4f6-4359-9997-b33ef4a8bb8f",
+      "8b2abbae-c5d3-4ee2-bbd7-a5dc1c8a16d8",
+      "614eab46-4cf5-47b1-a459-91c47914306c"
+    ],
+    "projects": [
+      "THE_FACTORY"
+    ]
+  },
+  {
+    "batch": 5,
+    "sessions": [
+      "4a4ceb99-f5f2-4a7a-9df7-cc2f5afafb34",
+      "ffab20a9-ff3e-4f44-b3d3-849e7674f5c2",
+      "ff2f5f32-8616-4280-aa82-922a2bf3872a",
+      "f9a06739-3890-4e1c-b3b6-a204eeef226e",
+      "f8b10c65-d6e0-4ad2-852a-9e935c684184"
+    ],
+    "projects": [
+      "unknown",
+      "THE_FACTORY"
+    ]
+  }
+]

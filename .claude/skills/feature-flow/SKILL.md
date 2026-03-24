@@ -103,12 +103,16 @@ re-reading code only to discover tasks were already implemented.
    separate context (subagent or fresh review). The context that wrote the code must
    NOT be the only context that certifies it. Verify against the spec's acceptance
    criteria, not just "does it compile."
-2. Update task tracker: `status: complete`, attach summary of what was built.
-3. Write a run record to `.agent/runs.jsonl`.
+2. **Close the task in `.agent/tasks.jsonl`:** Set `status: "complete"`, `flowPhase: "verify"`,
+   update `summary` with what was built, and set `updated` to the current ISO timestamp.
+   Use the task's `id` field (e.g. `tf-005`) — this is the through-line for traceability.
+3. **Write a run record to `.agent/runs.jsonl`** with these required fields:
+   `run_id`, `date`, `project_id`, `task_id` (must match the tasks.jsonl `id`),
+   `task_type`, `result` (success|partial|failed|blocked|escalated), `summary`.
 4. **Git:** Commit the run record: `close: run record + verify for {task-id}`.
 5. If the feature introduced a new pattern that future features should follow,
    note it in the relevant domain skill's `references/` directory.
-5. If the spec changed during implementation, update the spec to match reality
+6. If the spec changed during implementation, update the spec to match reality
    and record the change in the spec's Change Log.
 
 ## Subagent Guidance
@@ -138,7 +142,7 @@ For projects scaffolded from scratch in a single session (e.g., a new tool or ut
 - Do NOT combine feature work with refactoring. File a separate refactor task.
 - Do NOT write tests before implementation unless explicitly doing TDD.
 - Do NOT skip Phase 0 intent check. Missing intent is the #1 cause of mid-build reversals.
-- Do NOT silently retry more than 3 times. Log an incident and escalate.
+- Do NOT silently retry more than 2 times. Log an incident and escalate.
 - Do NOT skip the separate-context verification in Phase 5.
 - Do NOT proceed past dispatch readiness gate with missing non-goals or constraints.
 - Do NOT close the task without a run record in `.agent/runs.jsonl`.

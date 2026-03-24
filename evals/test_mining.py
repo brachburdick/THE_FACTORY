@@ -33,13 +33,12 @@ class TestSessionContinuity:
     """Infrastructure for session-to-session continuity exists."""
 
     def test_state_snapshot_hook_exists(self) -> None:
-        """The state-snapshot Stop hook is configured."""
-        # Accept either .sh or .py implementation
-        hook_sh = ROOT / ".claude" / "hooks" / "state-snapshot.sh"
+        """The state-snapshot Stop hook is configured (Python, no jq)."""
         hook_py = ROOT / ".claude" / "hooks" / "state-snapshot.py"
-        assert hook_sh.exists() or hook_py.exists(), "Missing state-snapshot hook (.sh or .py)"
-        hook_path = hook_py if hook_py.exists() else hook_sh
-        assert hook_path.stat().st_mode & 0o111, f"{hook_path.name} is not executable"
+        assert hook_py.exists(), "Missing state-snapshot.py hook"
+        # Verify the old jq-based .sh is gone (removed in #8)
+        hook_sh = ROOT / ".claude" / "hooks" / "state-snapshot.sh"
+        assert not hook_sh.exists(), "Stale state-snapshot.sh still present — remove it"
 
     @scue_available
     def test_codebase_orientation_skill_exists(self) -> None:

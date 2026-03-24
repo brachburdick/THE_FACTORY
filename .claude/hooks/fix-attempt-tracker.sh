@@ -1,7 +1,13 @@
 #!/bin/bash
-# PreToolUse hook (Edit): Track sequential source file edits without test runs.
-# After 3 edits to source files without an intervening test run, blocks with
-# escalation message. Implements the debug-flow 3-attempt cap as enforcement.
+# PreToolUse hook (Edit, Write, Bash): Track source mutations without test runs.
+# After 2 source mutations without an intervening test run, blocks with
+# escalation message. Implements the debug-flow 2-attempt cap as enforcement.
+#
+# Behavior:
+#   Edit/Write to source file → increment counter
+#   Edit/Write to test/doc/config file → ignore
+#   Bash running tests (pytest, npm test, etc.) → reset counter
+#   Counter > 2 → block with exit 2
 #
 # No jq dependency — uses python3 for JSON parsing.
 # State is tracked in a .state file (gitignored).
@@ -18,22 +24,36 @@ PARSED=$(python3 -c "
 import json, sys
 try:
     d = json.loads(sys.stdin.read())
-    print(d.get('tool_name', ''))
-    print(d.get('tool_input', {}).get('file_path', ''))
+    tool = d.get('tool_name', '')
+    fp = d.get('tool_input', {}).get('file_path', '')
+    cmd = d.get('tool_input', {}).get('command', '')
+    print(tool)
+    print(fp)
+    print(cmd)
 except Exception:
+    print('')
     print('')
     print('')
 " <<< "$INPUT" 2>/dev/null)
 
-TOOL_NAME=$(echo "$PARSED" | head -1)
-FILE_PATH=$(echo "$PARSED" | tail -n +2)
+TOOL_NAME=$(echo "$PARSED" | sed -n '1p')
+FILE_PATH=$(echo "$PARSED" | sed -n '2p')
+COMMAND=$(echo "$PARSED" | sed -n '3p')
 
-# Only track Edit tool calls
-if [ "$TOOL_NAME" != "Edit" ]; then
+# ── Bash: reset counter on test runs ──
+if [ "$TOOL_NAME" = "Bash" ]; then
+  if echo "$COMMAND" | grep -qE '(pytest|py\.test|npm test|npm run test|npx jest|npx vitest|cargo test|go test|\.venv/bin/python -m pytest)'; then
+    echo "0" > "$STATE_FILE"
+  fi
   exit 0
 fi
 
-# Skip test files — edits to tests don't count as fix attempts
+# ── Edit/Write: track source mutations ──
+if [ "$TOOL_NAME" != "Edit" ] && [ "$TOOL_NAME" != "Write" ]; then
+  exit 0
+fi
+
+# Skip test files — mutations to tests don't count as fix attempts
 if echo "$FILE_PATH" | grep -qE '(test_|_test\.|/tests/|/evals/|\.test\.|spec\.)'; then
   exit 0
 fi
@@ -59,10 +79,10 @@ COUNT=$((COUNT + 1))
 echo "$COUNT" > "$STATE_FILE"
 
 # Check threshold
-if [ "$COUNT" -gt 3 ]; then
-  echo "BLOCKED: $COUNT consecutive source edits without running tests." >&2
+if [ "$COUNT" -gt 2 ]; then
+  echo "BLOCKED: $COUNT consecutive source mutations without running tests." >&2
   echo "" >&2
-  echo "The debug-flow caps fix attempts at 3 before escalation." >&2
+  echo "The debug-flow caps fix attempts at 2 before requiring verification." >&2
   echo "Either:" >&2
   echo "  1. Run your test suite to verify progress (resets counter)" >&2
   echo "  2. Escalate to the operator with a diagnostic summary" >&2

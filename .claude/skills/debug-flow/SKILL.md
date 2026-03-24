@@ -38,7 +38,7 @@ description: >
 1. Explain the root cause in 1-2 sentences. Write it down before coding.
 2. Check: is this a recurrence of a known pattern? Search `.agent/evals/` and
    the CLAUDE.md gotchas section for related failures.
-3. If three fix attempts have failed, STOP. Log an incident in `.agent/incidents.jsonl`.
+3. If two fix attempts have failed, STOP. Log an incident in `.agent/incidents.jsonl`.
    Escalate to the human with a diagnostic summary. Do not continue iterating blindly.
 
 **Gate:** Root cause is documented. Fix approach is stated before implementation begins.
@@ -60,11 +60,15 @@ description: >
    separate context (subagent or fresh review). The context that wrote the fix must
    NOT be the only context that certifies it. Even a subagent dispatch within the
    same session counts.
-2. Update task tracker: `status: complete`, attach fix summary.
-3. Write a run record to `.agent/runs.jsonl`.
+2. **Close the task in `.agent/tasks.jsonl`:** Set `status: "complete"`, `flowPhase: "verify"`,
+   update `summary` with what was fixed, and set `updated` to the current ISO timestamp.
+   Use the task's `id` field (e.g. `tf-003`) — this is the through-line for traceability.
+3. **Write a run record to `.agent/runs.jsonl`** with these required fields:
+   `run_id`, `date`, `project_id`, `task_id` (must match the tasks.jsonl `id`),
+   `task_type`, `result` (success|partial|failed|blocked|escalated), `summary`.
 4. **Git:** Commit the run record and any eval case: `close: run record + verify for {task-id}`.
 5. If this bug pattern is likely to recur, file an eval case in `.agent/evals/`.
-5. If the fix reveals a broader architectural issue, file a separate investigation task.
+6. If the fix reveals a broader architectural issue, file a separate investigation task.
    Do NOT scope-creep the current fix.
 
 ## Subagent Guidance
@@ -79,11 +83,21 @@ the first research question should always be: **"What dependency versions does t
 use vs. what we use?"** Version delta is the highest-signal diagnostic. This heuristic would
 have cut a 4-agent-hour research session to ~30 minutes (beat-link 8.0.0 vs 8.1.0-SNAPSHOT).
 
+## Diagnostic Before Visual
+When debugging rendering or UI issues, follow this order BEFORE using preview screenshots:
+1. Run `tsc --noEmit` (or equivalent typecheck). Most rendering bugs are actually type errors.
+2. Check console logs/errors via `preview_console_logs` or browser console.
+3. Check network requests for failed API calls.
+4. Only then use `preview_screenshot` or `preview_eval` for visual verification.
+
+Do NOT enter a preview_eval → screenshot → preview_eval loop. If visual debugging
+exceeds 3 cycles without progress, stop and re-diagnose from console output.
+
 ## Negative Constraints — Do NOT:
 - Do NOT refactor while fixing. Refactoring is a separate task type.
 - Do NOT add features while fixing. Feature work is a separate task type.
 - Do NOT write more than one reproduction test initially. One is enough to gate Phase 1.
-- Do NOT silently retry more than 3 times. Log an incident and escalate.
+- Do NOT silently retry more than 2 times. Log an incident and escalate.
 - Do NOT skip the separate-context verification in Phase 5.
 - Do NOT modify files outside the failure path unless the fix requires it.
 - Do NOT change test assertions to make them pass. Fix the code, not the tests.

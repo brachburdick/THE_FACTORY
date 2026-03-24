@@ -1,4 +1,4 @@
-# THE_FACTORY v2.0
+# THE_FACTORY v2.1
 
 ## Core Principles
 - One operator agent. Specialist behavior via skills, not standing roles.
@@ -29,13 +29,18 @@ Classify the task, load the flow. Don't blend flows.
 | brainstorm, ideate, applications of | `skills/brainstorm/SKILL.md` | Generate. Operator triages. |
 
 ## Session Protocol
-- **Start:** Load this file. Check `.agent/state-snapshot.json` for prior session context. Load codebase orientation skill if working on a project.
-- **Mid-session:** Load skills as needed via trigger table.
-- **End:** Hooks enforce landing procedure. State snapshot written automatically.
+- **Start:**
+  1. Load this file.
+  2. Check `.agent/state-snapshot.json` for prior session context.
+  3. Check `.agent/tasks.jsonl` for pending/in_progress work. Claim a task by setting `status: "in_progress"` before starting. Use its `id` (e.g. `tf-003`) as your task reference throughout the session.
+  4. Check `LEARNINGS.md` for environment constraints before installing dependencies.
+  5. Load codebase orientation skill if working on a project.
+- **Mid-session:** Load skills as needed via trigger table. Reference the claimed task ID in commits, run records, and incident logs.
+- **End:** Hooks enforce landing procedure. State snapshot written automatically. If you completed work, you MUST have written a run record to `.agent/runs.jsonl` with the task ID before the session ends.
 
 ## What Hooks Enforce (don't duplicate in prose)
 - Git guard: no commits to main, no force-push, no reset --hard (fail-closed, no jq dependency)
-- Fix-attempt tracker: blocks after 3 source edits without running tests
+- Fix-attempt tracker: blocks after 2 source mutations (Edit/Write) without running tests; resets on test run
 - State snapshot: branch, commit, tasks, modified files persisted at session end (valid JSON via Python)
 - Audit run record: warns if no run record written during session
 - Langfuse trace: session metrics sent to Langfuse (when configured)
@@ -48,7 +53,7 @@ Classify the task, load the flow. Don't blend flows.
 
 ## Eval Suite
 Run: `.venv/bin/python -m pytest evals/ -v`
-~48 tests: conventions, flows, handoffs, mining regressions, behavioral checks.
+~64 tests: conventions, flows (including hook tests), handoffs (including task closure), mining regressions, behavioral checks.
 SCUE-specific tests auto-skip when /projects absent.
 
 ## Workspace Layout

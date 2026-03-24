@@ -1,7 +1,7 @@
 #!/bin/bash
-# Stop hook: Check if a run record was written this session.
-# Warns (non-blocking) if task work happened but no run record was appended.
-# No jq dependency — uses python3 for JSON parsing.
+# Stop hook: Check that every completed task has a matching run record.
+# Warns (non-blocking) if a completed task in tasks.jsonl lacks a corresponding
+# entry in runs.jsonl. No jq dependency — uses python3 for JSON parsing.
 
 set -e
 
@@ -39,13 +39,69 @@ TASKS_FILE="$PROJECT_ROOT/.agent/tasks.jsonl"
 # If no tasks file, nothing to check
 [ ! -f "$TASKS_FILE" ] && exit 0
 
-# Check if runs.jsonl was modified in last 2 hours (proxy for "this session")
-if [ -f "$RUNS_FILE" ] && [ -s "$RUNS_FILE" ]; then
-  if find "$RUNS_FILE" -mmin -120 2>/dev/null | grep -q .; then
-    exit 0
-  fi
-fi
+# Use python3 to cross-reference completed tasks against run records
+python3 -c "
+import json, sys
 
-# Non-blocking warning (exit 0, just print to stderr)
-echo "NOTE: No run record written this session. If you completed a task, append to .agent/runs.jsonl" >&2
+tasks_file = '$TASKS_FILE'
+runs_file = '$RUNS_FILE'
+
+# Load completed task IDs
+completed = set()
+try:
+    with open(tasks_file) as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                task = json.loads(line)
+                if task.get('status') == 'complete':
+                    tid = task.get('id', '')
+                    if tid:
+                        completed.add(tid)
+            except json.JSONDecodeError:
+                continue
+except FileNotFoundError:
+    sys.exit(0)
+
+if not completed:
+    sys.exit(0)
+
+# Load run record task IDs and check for summary field
+run_task_ids = set()
+runs_missing_summary = []
+try:
+    with open(runs_file) as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                run = json.loads(line)
+                tid = run.get('task_id', '')
+                if tid:
+                    run_task_ids.add(tid)
+                if not run.get('summary'):
+                    runs_missing_summary.append(run.get('run_id', '?'))
+            except json.JSONDecodeError:
+                continue
+except FileNotFoundError:
+    pass
+
+# Find completed tasks without run records
+orphans = sorted(completed - run_task_ids)
+if orphans:
+    print(f'WARNING: {len(orphans)} completed task(s) have no run record in runs.jsonl:', file=sys.stderr)
+    for tid in orphans:
+        print(f'  - {tid}', file=sys.stderr)
+    print('Append a run record for each before closing the session.', file=sys.stderr)
+
+if runs_missing_summary:
+    print(f'WARNING: {len(runs_missing_summary)} run record(s) missing summary field:', file=sys.stderr)
+    for rid in runs_missing_summary:
+        print(f'  - {rid}', file=sys.stderr)
+" 2>&1 >&2
+
+# Non-blocking (exit 0) — warnings only
 exit 0

@@ -183,3 +183,62 @@ class TestNoExcessiveRetries:
                 f"show edit storms (>5 consecutive edits without test):\n"
                 + "\n".join(violations[:5])
             )
+
+
+# ── Diagnostic before visual ────────────────────────────────────────────
+# Rule: typecheck/console/network before screenshot. Added in v2.1.
+
+
+@pytest.mark.behavioral
+class TestDiagnosticBeforeVisual:
+    """Sessions should use diagnostic tools before visual debugging."""
+
+    SCREENSHOT_TOOLS = {"preview_screenshot", "preview_eval"}
+    DIAGNOSTIC_TOOLS = {"preview_console_logs", "preview_logs", "preview_network", "preview_inspect", "preview_snapshot"}
+    # Bash commands that count as diagnostics
+    DIAGNOSTIC_COMMANDS = ("tsc", "typecheck", "npm run typecheck")
+
+    def test_no_screenshot_heavy_sessions_without_diagnostics(self, parsed_transcripts: list[dict]) -> None:
+        """Sessions with 3+ screenshots should have used diagnostic tools first.
+
+        A "diagnostic-before-visual violation" is a session that uses 3+ screenshot/eval
+        tools without any preceding diagnostic tool call (console, network, typecheck).
+        Threshold: <30% of screenshot-heavy sessions should violate.
+        """
+        if not parsed_transcripts:
+            pytest.skip("No transcripts available")
+
+        screenshot_sessions = []
+        violations = []
+
+        for t in parsed_transcripts:
+            screenshot_count = 0
+            has_diagnostic = False
+
+            for call in t["calls"]:
+                tool = call["tool"]
+                if tool in self.DIAGNOSTIC_TOOLS:
+                    has_diagnostic = True
+                elif tool == "Bash":
+                    summary = call.get("input_summary", "").lower()
+                    if any(kw in summary for kw in self.DIAGNOSTIC_COMMANDS):
+                        has_diagnostic = True
+                elif tool in self.SCREENSHOT_TOOLS:
+                    screenshot_count += 1
+
+            if screenshot_count >= 3:
+                screenshot_sessions.append(t["id"])
+                if not has_diagnostic:
+                    violations.append(
+                        f"{t['id'][:8]}: {screenshot_count} screenshots, no diagnostics"
+                    )
+
+        if not screenshot_sessions:
+            pytest.skip("No screenshot-heavy sessions to analyze")
+
+        violation_rate = len(violations) / len(screenshot_sessions)
+        assert violation_rate < 0.30, (
+            f"{len(violations)}/{len(screenshot_sessions)} screenshot-heavy sessions "
+            f"({violation_rate:.0%}) skipped diagnostics:\n"
+            + "\n".join(violations[:5])
+        )

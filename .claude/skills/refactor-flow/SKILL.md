@@ -52,8 +52,12 @@ description: >
 2. **Separate-context verification:** Before closing, run a verification step in a
    separate context (subagent or fresh review). The context that performed the
    refactor must NOT be the only context that certifies behavior preservation.
-3. Update task tracker: `status: complete`, attach summary of structural changes.
-4. Write a run record to `.agent/runs.jsonl`.
+3. **Close the task in `.agent/tasks.jsonl`:** Set `status: "complete"`, `flowPhase: "verify"`,
+   update `summary` with what was restructured, and set `updated` to the current ISO timestamp.
+   Use the task's `id` field (e.g. `tf-009`) — this is the through-line for traceability.
+4. **Write a run record to `.agent/runs.jsonl`** with these required fields:
+   `run_id`, `date`, `project_id`, `task_id` (must match the tasks.jsonl `id`),
+   `task_type`, `result` (success|partial|failed|blocked|escalated), `summary`.
 5. **Git:** Commit the run record: `close: run record + verify for {task-id}`.
 6. If the refactor established a new pattern (e.g., extracted a component library,
    established a service boundary), document it in the relevant domain skill or
@@ -70,7 +74,7 @@ When launching parallel Explore subagents:
 - Do NOT skip the snapshot phase. Without a baseline, you can't verify preservation.
 - Do NOT refactor and add features simultaneously. Ever.
 - Do NOT fix bugs found during refactoring. File them as separate debug-flow tasks.
-- Do NOT silently retry more than 3 times. Log an incident and escalate.
+- Do NOT silently retry more than 2 times. Log an incident and escalate.
 - Do NOT skip the separate-context verification in Phase 4.
 - Do NOT close the task without a run record in `.agent/runs.jsonl`.
 - Do NOT expand scope beyond the defined refactor boundary without updating the plan.

@@ -1,23 +1,70 @@
 #!/usr/bin/env python3
 """Index conversation transcripts for assess.py consumption.
 
-Scans .agent/conversations/*.jsonl, extracts per-session metrics,
-and writes index.jsonl sorted by recency (newest first).
+Scans all conversation sources:
+1. ~/.claude/projects/<project-slug>/*.jsonl (Claude Code's native storage)
+2. .agent/conversations/*.jsonl (legacy local copies, if any)
+
+Deduplicates by session_id, preferring the newer mtime.
+Writes index.jsonl sorted by recency (newest first).
 
 Usage:
-    python scripts/index-conversations.py
+    python scripts/index-conversations.py [--rebuild]
 """
 
+import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-CONVOS = ROOT / ".agent" / "conversations"
-INDEX = CONVOS / "index.jsonl"
+INDEX = ROOT / ".agent" / "conversations" / "index.jsonl"
+
+# Claude Code stores transcripts here, with project path encoded as slug
+CLAUDE_PROJECTS_DIR = Path.home() / ".claude" / "projects"
+
+# Known project slugs for this workspace
+PROJECT_SLUGS = {
+    "-Users-brach-Documents-THE-FACTORY": "THE_FACTORY",
+    "-Users-brach-Documents-THE-FACTORY-projects-DjTools-scue": "SCUE",
+    "-Users-brach-Documents-THE-FACTORY-projects-CRUCIBLE": "CRUCIBLE",
+    "-Users-brach-Documents-THE-FACTORY-projects-tinyshop": "Tinyshop",
+    "-Users-brach-Documents-THE-FACTORY-projects-enable": "enable",
+}
+
+# Legacy local copies
+LOCAL_CONVOS = ROOT / ".agent" / "conversations"
 
 
-def index_transcript(jsonl_path: Path) -> dict | None:
+def find_all_transcripts() -> list[tuple[Path, str]]:
+    """Find all transcript JSONL files across all sources.
+
+    Returns list of (path, project_name) tuples.
+    """
+    transcripts: list[tuple[Path, str]] = []
+
+    # 1. Scan Claude Code's native storage
+    if CLAUDE_PROJECTS_DIR.exists():
+        for slug, project_name in PROJECT_SLUGS.items():
+            project_dir = CLAUDE_PROJECTS_DIR / slug
+            if project_dir.exists():
+                for jsonl in project_dir.glob("*.jsonl"):
+                    # Skip subagent transcripts (in subdirs)
+                    if jsonl.parent == project_dir:
+                        transcripts.append((jsonl, project_name))
+
+    # 2. Scan legacy local copies
+    if LOCAL_CONVOS.exists():
+        for jsonl in LOCAL_CONVOS.glob("*.jsonl"):
+            if jsonl.name == "index.jsonl":
+                continue
+            transcripts.append((jsonl, "unknown"))
+
+    return transcripts
+
+
+def index_transcript(jsonl_path: Path, project_hint: str = "unknown") -> dict | None:
     """Extract metrics from a conversation JSONL file."""
     user_msgs = 0
     assistant_msgs = 0
@@ -25,9 +72,15 @@ def index_transcript(jsonl_path: Path) -> dict | None:
     subagent_count = 0
     reads_before_edit = 0
     first_edit_seen = False
-    project = "unknown"
+    project = project_hint
+    tool_frequency: dict[str, int] = {}
 
-    for line in jsonl_path.read_text().splitlines():
+    try:
+        text = jsonl_path.read_text()
+    except (PermissionError, OSError):
+        return None
+
+    for line in text.splitlines():
         line = line.strip()
         if not line:
             continue
@@ -36,42 +89,38 @@ def index_transcript(jsonl_path: Path) -> dict | None:
         except json.JSONDecodeError:
             continue
 
-        role = entry.get("type") or entry.get("role")
+        # Handle both transcript formats
+        msg = entry.get("message", entry)
+        role = msg.get("role", entry.get("type", ""))
+
         if role == "user":
             user_msgs += 1
         elif role == "assistant":
             assistant_msgs += 1
-            # Tool calls can be in entry.tool_calls (Claude Code transcript format)
-            # or in entry.content[].type=="tool_use" (API format)
-            tc_list = entry.get("tool_calls", [])
-            for tc in tc_list:
+
+            # Format 1: entry.tool_calls (Claude Code transcript format)
+            for tc in entry.get("tool_calls", []):
                 tool_calls += 1
-                tool_name = tc.get("tool", tc.get("name", ""))
-                input_summary = tc.get("input_summary", "")
+                tool_name = tc.get("tool", tc.get("name", "unknown"))
+                tool_frequency[tool_name] = tool_frequency.get(tool_name, 0) + 1
 
                 if tool_name == "Agent":
                     subagent_count += 1
-
                 if not first_edit_seen:
                     if tool_name in ("Edit", "Write", "NotebookEdit"):
                         first_edit_seen = True
                     elif tool_name in ("Read", "Glob", "Grep"):
                         reads_before_edit += 1
 
-                # Try to detect project from file paths in input_summary
-                if project == "unknown" and tool_name in ("Read", "Edit", "Write"):
-                    if "/projects/" in input_summary:
-                        parts = input_summary.split("/projects/")[1].split("/")
-                        if parts:
-                            project = parts[0]
-
-            # Also handle API format (content array with tool_use blocks)
-            content = entry.get("content", [])
+            # Format 2: content array with tool_use blocks (API format)
+            content = msg.get("content", [])
             if isinstance(content, list):
                 for block in content:
                     if isinstance(block, dict) and block.get("type") == "tool_use":
                         tool_calls += 1
-                        tool_name = block.get("name", "")
+                        tool_name = block.get("name", "unknown")
+                        tool_frequency[tool_name] = tool_frequency.get(tool_name, 0) + 1
+
                         if tool_name == "Agent":
                             subagent_count += 1
                         if not first_edit_seen:
@@ -93,30 +142,42 @@ def index_transcript(jsonl_path: Path) -> dict | None:
         "total_tool_calls": tool_calls,
         "subagent_count": subagent_count,
         "reads_before_edit": reads_before_edit,
+        "tool_frequency": tool_frequency,
     }
 
 
 def main() -> None:
-    if not CONVOS.exists():
-        print("No conversations directory found.", file=sys.stderr)
+    parser = argparse.ArgumentParser(description="Index conversation transcripts")
+    parser.add_argument("--rebuild", action="store_true", help="Force full rebuild")
+    args = parser.parse_args()
+
+    INDEX.parent.mkdir(parents=True, exist_ok=True)
+
+    # Find all transcripts
+    all_transcripts = find_all_transcripts()
+    if not all_transcripts:
+        print("No conversation transcripts found.", file=sys.stderr)
         sys.exit(1)
 
-    jsonl_files = sorted(CONVOS.glob("*.jsonl"))
-    if not jsonl_files:
-        print("No .jsonl transcript files found.", file=sys.stderr)
-        sys.exit(1)
+    # Deduplicate by session_id (prefer newer mtime)
+    best: dict[str, tuple[Path, str]] = {}
+    for path, project in all_transcripts:
+        sid = path.stem
+        if sid not in best or path.stat().st_mtime > best[sid][0].stat().st_mtime:
+            best[sid] = (path, project)
 
+    # Index each transcript
     entries = []
     skipped = 0
-    for jsonl in jsonl_files:
+    for sid, (path, project) in best.items():
         try:
-            entry = index_transcript(jsonl)
+            entry = index_transcript(path, project)
             if entry:
                 entries.append(entry)
             else:
                 skipped += 1
         except Exception as e:
-            print(f"  Skip {jsonl.name}: {e}", file=sys.stderr)
+            print(f"  Skip {path.name}: {e}", file=sys.stderr)
             skipped += 1
 
     # Sort by mtime descending (newest first)
@@ -126,7 +187,15 @@ def main() -> None:
         for entry in entries:
             f.write(json.dumps(entry) + "\n")
 
+    # Summary
+    projects = {}
+    for e in entries:
+        p = e.get("project", "unknown")
+        projects[p] = projects.get(p, 0) + 1
+
     print(f"Indexed {len(entries)} conversations → {INDEX.relative_to(ROOT)}")
+    for p, count in sorted(projects.items()):
+        print(f"  {p}: {count}")
     if skipped:
         print(f"  ({skipped} skipped — empty or unparseable)")
 

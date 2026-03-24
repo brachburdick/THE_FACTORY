@@ -35,10 +35,10 @@ class TestDebugFlowStructure:
         assert "subagent" in text.lower() or "fresh review" in text.lower()
 
     def test_has_iteration_cap(self) -> None:
-        """debug-flow caps fix attempts at 3 before escalating."""
+        """debug-flow caps fix attempts at 2 before escalating."""
         text = (ROOT / ".claude" / "skills" / "debug-flow" / "SKILL.md").read_text()
-        assert "3" in text and "escalat" in text.lower(), (
-            "debug-flow missing 3-attempt iteration cap with escalation"
+        assert "two fix attempts" in text.lower() and "escalat" in text.lower(), (
+            "debug-flow missing 2-attempt iteration cap with escalation"
         )
 
     def test_routing_signals_in_description(self) -> None:
@@ -46,6 +46,27 @@ class TestDebugFlowStructure:
         text = (ROOT / ".claude" / "skills" / "debug-flow" / "SKILL.md").read_text()
         for signal in ["fix", "bug", "error", "broken", "regression", "failing"]:
             assert signal in text.lower(), f"Missing routing signal: {signal}"
+
+    def test_diagnostic_before_visual_rule(self) -> None:
+        """debug-flow has diagnostic-before-visual with correct ordering."""
+        text = (ROOT / ".claude" / "skills" / "debug-flow" / "SKILL.md").read_text()
+        assert "Diagnostic Before Visual" in text or "diagnostic before visual" in text.lower(), (
+            "debug-flow missing Diagnostic Before Visual section"
+        )
+        # Verify correct ordering: typecheck before console before screenshot
+        tsc_pos = text.find("tsc --noEmit")
+        console_pos = text.find("console")
+        screenshot_pos = text.find("preview_screenshot")
+        assert tsc_pos >= 0, "Missing tsc --noEmit step"
+        assert console_pos >= 0, "Missing console check step"
+        assert screenshot_pos >= 0, "Missing preview_screenshot step"
+        assert tsc_pos < console_pos < screenshot_pos, (
+            "Diagnostic Before Visual ordering wrong: must be typecheck → console → screenshot"
+        )
+        # Verify anti-loop guard
+        assert "3 cycles" in text or "three cycles" in text.lower(), (
+            "Missing anti-loop guard for visual debugging cycles"
+        )
 
 
 # ── feature-flow-requires-spec-gate ──────────────────────────────────────
@@ -125,7 +146,7 @@ class TestFlowEscalation:
         for skill_path in self.FLOW_SKILLS:
             text = skill_path.read_text()
             flow_name = skill_path.parent.name
-            assert "3" in text and ("retry" in text.lower() or "attempt" in text.lower()), (
+            assert "2" in text and ("retry" in text.lower() or "attempt" in text.lower()), (
                 f"{flow_name} missing iteration cap"
             )
             assert "escalat" in text.lower() or "incident" in text.lower(), (
@@ -140,6 +161,122 @@ class TestFlowEscalation:
             assert "runs.jsonl" in text, (
                 f"{flow_name} doesn't require run record in runs.jsonl"
             )
+
+    def test_all_flows_link_task_id(self) -> None:
+        """Every flow skill's Phase 5 links the run record task_id to tasks.jsonl."""
+        for skill_path in self.FLOW_SKILLS:
+            text = skill_path.read_text()
+            flow_name = skill_path.parent.name
+            assert "tasks.jsonl" in text, (
+                f"{flow_name} Phase 5 doesn't reference tasks.jsonl for task ID linkage"
+            )
+            assert "task_id" in text, (
+                f"{flow_name} Phase 5 doesn't mention task_id field"
+            )
+
+
+# ── fix-attempt-tracker hook tests ───────────────────────────────────────
+# Direct tests of the hook script behavior.
+
+import json
+import subprocess
+import tempfile
+
+
+@pytest.mark.flow
+class TestFixAttemptTrackerHook:
+    """fix-attempt-tracker.sh correctly tracks, ignores, resets, and blocks."""
+
+    HOOK = ROOT / ".claude" / "hooks" / "fix-attempt-tracker.sh"
+    STATE_FILE = ROOT / ".claude" / "hooks" / "fix-attempt-tracker.state"
+
+    def _run_hook(self, tool_name: str, file_path: str = "", command: str = "") -> subprocess.CompletedProcess[str]:
+        """Run the hook with simulated tool input, return CompletedProcess."""
+        payload = {"tool_name": tool_name, "tool_input": {}}
+        if file_path:
+            payload["tool_input"]["file_path"] = file_path
+        if command:
+            payload["tool_input"]["command"] = command
+        return subprocess.run(
+            ["bash", str(self.HOOK)],
+            input=json.dumps(payload),
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+
+    def _reset_state(self) -> None:
+        """Reset the state file to 0."""
+        self.STATE_FILE.write_text("0\n")
+
+    def setup_method(self) -> None:
+        """Reset state before each test."""
+        self._reset_state()
+
+    def teardown_method(self) -> None:
+        """Clean up state after each test."""
+        self._reset_state()
+
+    def test_ignores_test_files(self) -> None:
+        """Edits to test files don't increment the counter."""
+        self._run_hook("Edit", file_path="/project/tests/test_foo.py")
+        self._run_hook("Edit", file_path="/project/evals/test_bar.py")
+        self._run_hook("Write", file_path="/project/src/foo.spec.ts")
+        count = int(self.STATE_FILE.read_text().strip())
+        assert count == 0, f"Test file edits incremented counter to {count}"
+
+    def test_ignores_docs_and_config(self) -> None:
+        """Edits to docs, config, and non-source files don't increment."""
+        self._run_hook("Edit", file_path="/project/README.md")
+        self._run_hook("Edit", file_path="/project/config.json")
+        self._run_hook("Write", file_path="/project/pyproject.toml")
+        self._run_hook("Edit", file_path="/project/.claude/settings.yaml")
+        count = int(self.STATE_FILE.read_text().strip())
+        assert count == 0, f"Doc/config edits incremented counter to {count}"
+
+    def test_counts_source_edits(self) -> None:
+        """Edits to source files increment the counter."""
+        self._run_hook("Edit", file_path="/project/src/main.py")
+        count = int(self.STATE_FILE.read_text().strip())
+        assert count == 1
+
+    def test_counts_source_writes(self) -> None:
+        """Write tool on source files also increments the counter."""
+        self._run_hook("Write", file_path="/project/src/main.py")
+        count = int(self.STATE_FILE.read_text().strip())
+        assert count == 1
+
+    def test_resets_on_pytest(self) -> None:
+        """Running pytest resets the counter to 0."""
+        self._run_hook("Edit", file_path="/project/src/main.py")
+        self._run_hook("Edit", file_path="/project/src/utils.py")
+        assert int(self.STATE_FILE.read_text().strip()) == 2
+        self._run_hook("Bash", command=".venv/bin/python -m pytest tests/ -v")
+        assert int(self.STATE_FILE.read_text().strip()) == 0
+
+    def test_resets_on_npm_test(self) -> None:
+        """Running npm test resets the counter to 0."""
+        self._run_hook("Edit", file_path="/project/src/app.tsx")
+        assert int(self.STATE_FILE.read_text().strip()) == 1
+        self._run_hook("Bash", command="npm test")
+        assert int(self.STATE_FILE.read_text().strip()) == 0
+
+    def test_blocks_after_threshold(self) -> None:
+        """Third source mutation without tests is blocked (exit 2)."""
+        self._run_hook("Edit", file_path="/project/src/a.py")
+        self._run_hook("Edit", file_path="/project/src/b.py")
+        result = self._run_hook("Edit", file_path="/project/src/c.py")
+        assert result.returncode == 2, f"Expected exit 2 (blocked), got {result.returncode}"
+        assert "BLOCKED" in result.stderr
+
+    def test_normal_workflow_not_blocked(self) -> None:
+        """Edit-edit-test-edit-edit cycle should never block."""
+        self._run_hook("Edit", file_path="/project/src/a.py")
+        self._run_hook("Edit", file_path="/project/src/b.py")
+        self._run_hook("Bash", command="pytest tests/")
+        self._run_hook("Edit", file_path="/project/src/c.py")
+        result = self._run_hook("Edit", file_path="/project/src/d.py")
+        assert result.returncode == 0, f"Normal workflow blocked: {result.stderr}"
 
 
 # ── skill-triggers-correctly ─────────────────────────────────────────────

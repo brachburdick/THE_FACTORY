@@ -1,10 +1,31 @@
 {
-  "session_id": "16207a75-ec4c-44dd-a28b-9f1153148b06",
-  "timestamp": "2026-03-24T12:54:30Z",
+  "session_id": "2a9b1978-426d-4cfc-b9f2-65bab63349e2",
+  "timestamp": "2026-03-24T20:05:11Z",
   "project_root": "/Users/brach/Documents/THE_FACTORY",
   "branch": "v2.1",
-  "last_commit": "203e9907e77d6d2388cbd22c4f667347bc513605 v2.1 updates",
-  "modified_files": [],
+  "last_commit": "ccb11c3092d5ec2f84e424967ed02c750f43cdbd add launch.json",
+  "modified_files": [
+    ".agent/conversations/index.jsonl",
+    ".agent/evals/manifest.md",
+    ".agent/runs.jsonl",
+    ".agent/state-snapshot.json",
+    ".agent/tasks.jsonl",
+    ".claude/.DS_Store",
+    ".claude/hooks/audit-run-record.sh",
+    ".claude/hooks/fix-attempt-tracker.sh",
+    ".claude/hooks/langfuse-trace.py",
+    ".claude/hooks/state-snapshot.sh",
+    ".claude/launch.json",
+    ".claude/settings.json",
+    ".claude/skills/.DS_Store",
+    ".claude/skills/debug-flow/SKILL.md",
+    ".claude/skills/feature-flow/SKILL.md",
+    ".claude/skills/refactor-flow/SKILL.md",
+    "CLAUDE.md",
+    "evals/.DS_Store",
+    "evals/__pycache__/test_flows.cpython-313-pytest-9.0.2.pyc",
+    "evals/__pycache__/test_handoffs.cpython-313-pytest-9.0.2.pyc"
+  ],
   "staged_files": [],
   "active_tasks": [
     {
@@ -42,6 +63,30 @@
       "status": "blocked",
       "taskType": "feature",
       "summary": "Tinyshop: Phase 3 Frontend \u2014 TASK-011 through TASK-023 (UI components, launch flow, edge cases)"
+    },
+    {
+      "id": "tf-011",
+      "status": "pending",
+      "taskType": "feature",
+      "summary": "Review-cycle skill: encode the three-lens process, session selection, batching, and synthesis as a reusable skill in skills/review-cycle/SKILL.md"
+    },
+    {
+      "id": "tf-012",
+      "status": "pending",
+      "taskType": "refactor",
+      "summary": "Edit() hygiene rule: add guidance to all 3 flow skills \u2014 if >3 sequential Edit() on same file, use Write() instead. Reduces edit-cycling anti-pattern (8/25 sessions)."
+    },
+    {
+      "id": "tf-013",
+      "status": "pending",
+      "taskType": "feature",
+      "summary": "Session scope guideline: add to all 3 flow skills \u2014 cap sessions at 1-2 objectives. Sessions with 4+ objectives consistently score 2-3/5 efficiency."
+    },
+    {
+      "id": "tf-014",
+      "status": "pending",
+      "taskType": "feature",
+      "summary": "Phase handoff prompt template: formalize the handoff-prompt pattern (emergent in sessions 4,8,14) as a template in templates/phase-handoff.md"
     }
   ],
   "working_directory": "/Users/brach/Documents/THE_FACTORY"

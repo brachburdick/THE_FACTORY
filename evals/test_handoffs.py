@@ -162,3 +162,112 @@ class TestRunRecordSchema:
             assert result in valid, (
                 f"Run record {i} has invalid result '{result}'. Valid: {valid}"
             )
+
+    def test_run_record_task_ids_exist_in_tasks_jsonl(self) -> None:
+        """Every run record's task_id must reference a valid task in tasks.jsonl.
+
+        This is the traceability through-line: task queue → flow execution → run record.
+        """
+        runs_path = AGENT_DIR / "runs.jsonl"
+        tasks_path = AGENT_DIR / "tasks.jsonl"
+        if not runs_path.exists() or runs_path.stat().st_size == 0:
+            pytest.skip("No run records exist yet")
+        if not tasks_path.exists():
+            pytest.skip("No tasks.jsonl exists")
+
+        # Collect all task IDs
+        task_ids: set[str] = set()
+        for line in tasks_path.read_text().splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                task = json.loads(line)
+                tid = task.get("id", "")
+                if tid:
+                    task_ids.add(tid)
+            except json.JSONDecodeError:
+                continue
+
+        # Check every run record references a valid task
+        orphans = []
+        for i, line in enumerate(runs_path.read_text().splitlines()):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                run = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            run_task_id = run.get("task_id", "")
+            if run_task_id and run_task_id not in task_ids:
+                orphans.append(f"run {i} ({run.get('run_id', '?')}): task_id '{run_task_id}' not in tasks.jsonl")
+
+        assert not orphans, (
+            f"Run records reference task IDs not found in tasks.jsonl:\n"
+            + "\n".join(orphans)
+        )
+
+
+# ── task closure completeness ───────────────────────────────────────────
+# Rule: Every completed task must have a matching run record with summary.
+
+
+@pytest.mark.handoff
+class TestTaskClosureCompleteness:
+    """Completed tasks must have matching run records."""
+
+    def test_completed_tasks_have_run_records(self) -> None:
+        """Every completed task in tasks.jsonl has a run record in runs.jsonl."""
+        tasks_path = AGENT_DIR / "tasks.jsonl"
+        runs_path = AGENT_DIR / "runs.jsonl"
+        if not tasks_path.exists():
+            pytest.skip("No tasks.jsonl")
+
+        completed_ids: set[str] = set()
+        for line in tasks_path.read_text().splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                task = json.loads(line)
+                if task.get("status") == "complete" and task.get("id"):
+                    completed_ids.add(task["id"])
+            except json.JSONDecodeError:
+                continue
+
+        if not completed_ids:
+            pytest.skip("No completed tasks")
+
+        run_task_ids: set[str] = set()
+        if runs_path.exists():
+            for line in runs_path.read_text().splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    run = json.loads(line)
+                    if run.get("task_id"):
+                        run_task_ids.add(run["task_id"])
+                except json.JSONDecodeError:
+                    continue
+
+        missing = sorted(completed_ids - run_task_ids)
+        assert not missing, (
+            f"Completed tasks without run records:\n"
+            + "\n".join(f"  - {tid}" for tid in missing)
+        )
+
+    def test_run_records_have_summary(self, runs_jsonl: list[dict[str, Any]]) -> None:
+        """Every run record must include a non-empty summary field."""
+        if not runs_jsonl:
+            pytest.skip("No run records")
+        missing = [
+            run.get("run_id", f"index-{i}")
+            for i, run in enumerate(runs_jsonl)
+            if not run.get("summary")
+        ]
+        assert not missing, (
+            f"Run records missing summary:\n"
+            + "\n".join(f"  - {rid}" for rid in missing)
+        )

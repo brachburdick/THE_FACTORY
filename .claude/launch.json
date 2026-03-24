@@ -24,6 +24,12 @@
       "runtimeExecutable": "bash",
       "runtimeArgs": ["-c", "cd projects/DjTools/scue/frontend && npm run dev -- --port 5174"],
       "port": 5174
+    },
+    {
+      "name": "annaplanna",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd projects/AnnaPlanna && VITE_SUPABASE_URL=https://placeholder.supabase.co VITE_SUPABASE_ANON_KEY=placeholder npx vite --port 5175"],
+      "port": 5175
     }
   ]
 }
