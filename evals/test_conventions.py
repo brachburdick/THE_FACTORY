@@ -180,6 +180,170 @@ class TestNoCrossLayerImports:
         )
 
 
+# ── section-boundary-enforcement ─────────────────────────────────────────
+# Rule: Section contracts are respected — no forbidden cross-section imports.
+
+
+@pytest.mark.convention
+@scue_available
+class TestSectionBoundaries:
+    """Section boundary contracts are mechanically enforced."""
+
+    def test_bridge_does_not_import_analysis_or_api(self, scue_python_files: list[Path]) -> None:
+        """Bridge section must not import from layer1, layer2-4, or api."""
+        forbidden = ("scue.layer1", "scue.layer2", "scue.layer3", "scue.layer4", "scue.api")
+        violations = []
+        for f in scue_python_files:
+            rel = str(f)
+            if "/bridge/" not in rel and "/network/" not in rel:
+                continue
+            text = f.read_text()
+            for i, line in enumerate(text.splitlines(), 1):
+                stripped = line.strip()
+                if not stripped.startswith(("import ", "from ")):
+                    continue
+                for mod in forbidden:
+                    if mod in stripped:
+                        violations.append(f"{f.name}:{i} — {stripped}")
+        assert not violations, (
+            f"Bridge section imports from forbidden modules:\n"
+            + "\n".join(violations)
+        )
+
+    def test_analysis_does_not_import_api_or_upper_layers(self, scue_python_files: list[Path]) -> None:
+        """Analysis section must not import from layer2-4 or api."""
+        forbidden = ("scue.layer2", "scue.layer3", "scue.layer4", "scue.api")
+        violations = []
+        for f in scue_python_files:
+            rel = str(f)
+            if "/layer1/" not in rel:
+                continue
+            text = f.read_text()
+            for i, line in enumerate(text.splitlines(), 1):
+                stripped = line.strip()
+                if not stripped.startswith(("import ", "from ")):
+                    continue
+                for mod in forbidden:
+                    if mod in stripped:
+                        violations.append(f"{f.name}:{i} — {stripped}")
+        assert not violations, (
+            f"Analysis section imports from forbidden modules:\n"
+            + "\n".join(violations)
+        )
+
+    def test_pipeline_layers_respect_downward_only(self, scue_python_files: list[Path]) -> None:
+        """Pipeline layers (2/3/4) import only from the layer directly below."""
+        violations = []
+        layer_forbidden = {
+            "layer2": ("scue.layer3", "scue.layer4", "scue.api", "scue.bridge"),
+            "layer3": ("scue.layer4", "scue.api", "scue.bridge", "scue.layer1"),
+            "layer4": ("scue.api", "scue.bridge", "scue.layer1", "scue.layer2"),
+        }
+        for f in scue_python_files:
+            rel = str(f)
+            for layer, forbidden in layer_forbidden.items():
+                if f"/{layer}/" not in rel:
+                    continue
+                text = f.read_text()
+                for i, line in enumerate(text.splitlines(), 1):
+                    stripped = line.strip()
+                    if not stripped.startswith(("import ", "from ")):
+                        continue
+                    for mod in forbidden:
+                        if mod in stripped:
+                            violations.append(f"{f.name}:{i} ({layer}) — {stripped}")
+        assert not violations, (
+            f"Pipeline layer imports from forbidden modules:\n"
+            + "\n".join(violations)
+        )
+
+    def test_frontend_no_python_imports(self) -> None:
+        """Frontend section has no Python imports (different runtime)."""
+        fe_root = SCUE_ROOT / "frontend" / "src"
+        if not fe_root.exists():
+            pytest.skip("Frontend not present")
+        # Check for any .py files in frontend/ (should be zero)
+        py_files = list(fe_root.rglob("*.py"))
+        assert not py_files, (
+            f"Python files found in frontend/src/:\n"
+            + "\n".join(str(f) for f in py_files)
+        )
+
+    def test_section_contracts_exist(self) -> None:
+        """Each defined section has a contract file."""
+        sections_dir = SCUE_ROOT / "sections"
+        if not sections_dir.exists():
+            pytest.skip("No sections directory")
+        required = ["bridge.md", "analysis.md", "pipeline.md", "server.md", "frontend.md"]
+        missing = [s for s in required if not (sections_dir / s).exists()]
+        assert not missing, f"Missing section contracts: {missing}"
+
+    def test_sections_map_exists(self) -> None:
+        """SECTIONS.md exists and defines the section map."""
+        sections_md = SCUE_ROOT / "sections" / "SECTIONS.md"
+        assert sections_md.exists(), "Missing sections/SECTIONS.md"
+        text = sections_md.read_text()
+        assert "Coupling Map" in text, "SECTIONS.md missing coupling map"
+        assert "Parallelization Rules" in text, "SECTIONS.md missing parallelization rules"
+        assert "Three-Pass Review" in text, "SECTIONS.md missing review model"
+
+
+# ── section-file-coverage ────────────────────────────────────────────────
+# Rule: Every source file belongs to exactly one section.
+
+
+@pytest.mark.convention
+@scue_available
+class TestSectionFileCoverage:
+    """Every source file is claimed by exactly one section."""
+
+    # Section ownership: path prefix → section name
+    SECTION_PATHS = {
+        "scue/bridge/": "bridge",
+        "scue/network/": "bridge",
+        "scue/layer1/": "analysis",
+        "scue/layer2/": "pipeline",
+        "scue/layer3/": "pipeline",
+        "scue/layer4/": "pipeline",
+        "scue/api/": "server",
+        "scue/config/": "server",
+        "scue/main.py": "server",
+        "scue/project/": "server",
+        "scue/ui/": "server",
+        "frontend/": "frontend",
+    }
+
+    def test_all_python_source_claimed(self, scue_python_files: list[Path]) -> None:
+        """Every Python source file in scue/ belongs to a section."""
+        unclaimed = []
+        for f in scue_python_files:
+            rel = str(f.relative_to(SCUE_ROOT))
+            # Skip test files, reference/poc, tools, scripts, hooks, top-level __init__
+            if rel.startswith("tests/") or "_reference/" in rel or rel.startswith("tools/"):
+                continue
+            if rel.startswith(".claude/") or rel == "scue/__init__.py":
+                continue
+            claimed = any(rel.startswith(prefix) for prefix in self.SECTION_PATHS)
+            if not claimed:
+                unclaimed.append(rel)
+        assert not unclaimed, (
+            f"Python files not claimed by any section:\n"
+            + "\n".join(f"  - {f}" for f in unclaimed)
+        )
+
+    def test_all_typescript_source_claimed(self, scue_ts_files: list[Path]) -> None:
+        """Every TypeScript source file in frontend/ belongs to the frontend section."""
+        unclaimed = []
+        for f in scue_ts_files:
+            rel = str(f.relative_to(SCUE_ROOT))
+            if not rel.startswith("frontend/"):
+                unclaimed.append(rel)
+        assert not unclaimed, (
+            f"TypeScript files outside frontend/ section:\n"
+            + "\n".join(f"  - {f}" for f in unclaimed)
+        )
+
+
 # ── venv-python ──────────────────────────────────────────────────────────
 # Source: .agent/evals/conventions/venv-python.eval.md
 

@@ -16,6 +16,7 @@ Pipeline-level skills. Project-specific triggers live in each project's own CLAU
 | Handoff between domains | `skills/handoff/SKILL.md` | JSON Schema envelope |
 | Project scaffolding | `skills/project-scaffold/SKILL.md` | .agent/ structure |
 | Brainstorm / ideation | `skills/brainstorm/SKILL.md` | Research→candidates |
+| Section review / audit / quality check | `skills/section-review/SKILL.md` | Three-pass: section→boundary→integration |
 
 ## Flow Routing
 
@@ -53,7 +54,7 @@ Classify the task, load the flow. Don't blend flows.
 
 ## Eval Suite
 Run: `.venv/bin/python -m pytest evals/ -v`
-~64 tests: conventions, flows (including hook tests), handoffs (including task closure), mining regressions, behavioral checks.
+~72 tests: conventions (including section boundary enforcement), flows (including hook tests), handoffs (including task closure), mining regressions, behavioral checks.
 SCUE-specific tests auto-skip when /projects absent.
 
 ## Workspace Layout
