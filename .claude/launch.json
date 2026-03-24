@@ -1,0 +1,29 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "pab-backend",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "export $(grep ANTHROPIC_API_KEY ~/.zshrc | sed 's/export //' | tr -d '\"') && cd projects/pabproject/backend && .venv/bin/uvicorn app.main:app --reload --port 8000"],
+      "port": 8000
+    },
+    {
+      "name": "pab-frontend",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd projects/pabproject/frontend && npm run dev"],
+      "port": 3000
+    },
+    {
+      "name": "scue-backend",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd projects/DjTools/scue && .venv/bin/uvicorn scue.main:app --reload --port 8000"],
+      "port": 8000
+    },
+    {
+      "name": "scue-frontend",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd projects/DjTools/scue/frontend && npm run dev -- --port 5174"],
+      "port": 5174
+    }
+  ]
+}
