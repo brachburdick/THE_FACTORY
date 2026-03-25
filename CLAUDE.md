@@ -52,6 +52,9 @@ Classify the task, load the flow. Don't blend flows.
 - Log incidents to `.agent/incidents.jsonl` on failure
 - File eval cases for recurring failure patterns
 
+## Project Isolation
+THE_FACTORY is the pipeline/process repo. **Project source code must never be tracked by this repo.** Each project under `projects/` has its own git repo and its own CLAUDE.md. The `.gitignore` enforces this — do not override it. If you need to reference project structure in pipeline docs, use generic examples, not real project paths or content.
+
 ## Section-Based Project Structure
 Projects with sufficient complexity should be divided into **sections** — isolated review units defined by real dataflow boundaries, not just folders. Each section has a 1-page contract specifying purpose, owned paths, inputs, outputs, invariants, and verification command.
 

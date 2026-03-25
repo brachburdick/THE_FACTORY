@@ -1,13 +1,19 @@
-# Ignore the projects directory and its contents
+# ── Project isolation ──
+# Project source code lives in /projects/ but MUST NOT be tracked by THE_FACTORY repo.
+# Each project has its own git repo. No project data should ever leak into this repo.
 /projects/
 
-# macOS
+# ── Agent state (session-specific, not shareable) ──
+.agent/conversations/
+.agent/state-snapshot.json
+
+# ── macOS ──
 .DS_Store
 
-# Python
+# ── Python ──
 __pycache__/
 *.pyc
 .venv/
 
-# Hook state files (temp tracking)
+# ── Hook state files (temp tracking) ──
 .claude/hooks/*.state
