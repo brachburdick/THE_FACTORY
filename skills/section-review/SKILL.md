@@ -87,6 +87,22 @@ After all three passes:
 - **New section being built from scratch**: Use feature-flow, not section-review.
 - **Cross-cutting refactor that changes boundaries**: Redesign sections first, then review.
 
+## Re-Evaluating Sections After Session Batches
+
+After a project completes a milestone, feature, or batch of sessions, assess whether the section structure still reflects reality. Check:
+
+1. **Should a section split?** A section that grew past ~2000 LOC, gained an independent test suite, or developed an internal dataflow boundary is a split candidate. Example: SCUE's `strata` was split from `analysis` when it reached 3000+ LOC with independent tests and a clean boundary.
+
+2. **Should sections merge?** If changes to one section routinely require changes to another, or the boundary contract between them is more complex than either section's internals, merge them.
+
+3. **Are boundary contracts stale?** New types, changed APIs, or removed functions may have made a contract inaccurate. Check that owned paths, inputs, outputs, and invariants still match the code.
+
+4. **Are there new unclaimed files?** Run the file coverage eval. New files added during the session batch may not be assigned to a section.
+
+5. **Has coupling changed?** A section that was parallelizable may now share state with another. Update the coupling map in `SECTIONS.md`.
+
+Record section changes in the session's run record: `"section_changes": "split strata from analysis"` or `"section_changes": "none"`.
+
 ## Measurement
 
 Track these metrics in `.agent/runs.jsonl` for review-type tasks:

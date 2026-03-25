@@ -27,13 +27,13 @@
 
 | Test File | Tests | Category |
 |-----------|-------|----------|
-| test_conventions.py | 15 | Code conventions + section boundary enforcement + file coverage |
+| test_conventions.py | 16 | Code conventions + section boundary enforcement (incl. strata) + file coverage |
 | test_flows.py | 26 | Flow skill structure, routing, and hook tests (8 direct hook tests) |
 | test_handoffs.py | 16 | Schema validation, required artifacts, task closure completeness |
 | test_mining.py | 11 | Regression checks from conversation mining |
 | test_behavioral.py | 4 | Agent behavior from session transcripts (diagnostic-before-visual) |
 
-Total: ~72 tests (some skipped when SCUE absent, transcripts empty, or run records empty).
+Total: ~73 tests (some skipped when SCUE absent, transcripts empty, or run records empty).
 
 The `.eval.md` spec files in subdirectories are reference documentation.
 They describe expected behavior in Input/Expected/Fail-If format but are

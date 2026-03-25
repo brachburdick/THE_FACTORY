@@ -114,6 +114,9 @@ re-reading code only to discover tasks were already implemented.
    note it in the relevant domain skill's `references/` directory.
 6. If the spec changed during implementation, update the spec to match reality
    and record the change in the spec's Change Log.
+7. **Section check:** If the project has `sections/SECTIONS.md`, check whether this feature
+   added files outside existing sections, changed a boundary contract, or grew a section
+   past the split threshold. Update section contracts if needed.
 
 ## Subagent Guidance
 When launching parallel Explore subagents for research or exploration:

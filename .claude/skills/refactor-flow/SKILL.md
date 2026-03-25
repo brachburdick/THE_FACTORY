@@ -62,6 +62,9 @@ description: >
 6. If the refactor established a new pattern (e.g., extracted a component library,
    established a service boundary), document it in the relevant domain skill or
    project CLAUDE.md gotchas section.
+7. **Section check:** If the project has `sections/SECTIONS.md`, check whether this refactor
+   moved files across section boundaries, changed coupling between sections, or created
+   a natural split point. Update section contracts and coupling map if needed.
 
 ## Subagent Guidance
 When launching parallel Explore subagents:

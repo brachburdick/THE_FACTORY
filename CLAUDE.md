@@ -52,9 +52,19 @@ Classify the task, load the flow. Don't blend flows.
 - Log incidents to `.agent/incidents.jsonl` on failure
 - File eval cases for recurring failure patterns
 
+## Section-Based Project Structure
+Projects with sufficient complexity should be divided into **sections** — isolated review units defined by real dataflow boundaries, not just folders. Each section has a 1-page contract specifying purpose, owned paths, inputs, outputs, invariants, and verification command.
+
+- **Skill:** `skills/section-review/SKILL.md` — three-pass review model (section → boundary → integration)
+- **Template:** `templates/section-contract.md` — 1-page contract format
+- **Principles:** `SYNTROPY.md` — 8 convergent principles for structured decomposition
+- **Enforcement:** Section boundary imports and file coverage are checked by evals
+
+**Re-evaluate sections after each session batch.** When a project completes a milestone, feature, or significant refactor, assess whether sections should be added, split, merged, or have their boundaries adjusted. Section structure is a living artifact — it evolves with the codebase. See `sections/SECTIONS.md` in each project for the current section map and split/merge criteria.
+
 ## Eval Suite
 Run: `.venv/bin/python -m pytest evals/ -v`
-~72 tests: conventions (including section boundary enforcement), flows (including hook tests), handoffs (including task closure), mining regressions, behavioral checks.
+~73 tests: conventions (including section boundary enforcement), flows (including hook tests), handoffs (including task closure), mining regressions, behavioral checks.
 SCUE-specific tests auto-skip when /projects absent.
 
 ## Workspace Layout

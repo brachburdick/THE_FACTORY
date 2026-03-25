@@ -257,6 +257,35 @@ class TestSectionBoundaries:
             + "\n".join(violations)
         )
 
+    def test_strata_does_not_import_forbidden(self, scue_python_files: list[Path]) -> None:
+        """Strata section must not import from tracking, enrichment, api, or upper layers."""
+        # Strata may import from: layer1.models, layer1.storage, layer1.detectors.events, bridge.adapter
+        forbidden = ("scue.api", "scue.layer2", "scue.layer3", "scue.layer4", "scue.config")
+        # Also forbidden: other layer1 subsystems (but not models/storage/detectors)
+        forbidden_layer1 = ("layer1.tracking", "layer1.analysis", "layer1.enrichment",
+                            "layer1.cursor", "layer1.fingerprint", "layer1.reanalysis",
+                            "layer1.usb_scanner", "layer1.divergence")
+        violations = []
+        for f in scue_python_files:
+            rel = str(f)
+            if "/layer1/strata/" not in rel:
+                continue
+            text = f.read_text()
+            for i, line in enumerate(text.splitlines(), 1):
+                stripped = line.strip()
+                if not stripped.startswith(("import ", "from ")):
+                    continue
+                for mod in forbidden:
+                    if mod in stripped:
+                        violations.append(f"{f.name}:{i} — {stripped}")
+                for mod in forbidden_layer1:
+                    if mod in stripped:
+                        violations.append(f"{f.name}:{i} — {stripped}")
+        assert not violations, (
+            f"Strata section imports from forbidden modules:\n"
+            + "\n".join(violations)
+        )
+
     def test_frontend_no_python_imports(self) -> None:
         """Frontend section has no Python imports (different runtime)."""
         fe_root = SCUE_ROOT / "frontend" / "src"
@@ -274,7 +303,7 @@ class TestSectionBoundaries:
         sections_dir = SCUE_ROOT / "sections"
         if not sections_dir.exists():
             pytest.skip("No sections directory")
-        required = ["bridge.md", "analysis.md", "pipeline.md", "server.md", "frontend.md"]
+        required = ["bridge.md", "analysis.md", "strata.md", "pipeline.md", "server.md", "frontend.md"]
         missing = [s for s in required if not (sections_dir / s).exists()]
         assert not missing, f"Missing section contracts: {missing}"
 
@@ -298,20 +327,22 @@ class TestSectionFileCoverage:
     """Every source file is claimed by exactly one section."""
 
     # Section ownership: path prefix → section name
-    SECTION_PATHS = {
-        "scue/bridge/": "bridge",
-        "scue/network/": "bridge",
-        "scue/layer1/": "analysis",
-        "scue/layer2/": "pipeline",
-        "scue/layer3/": "pipeline",
-        "scue/layer4/": "pipeline",
-        "scue/api/": "server",
-        "scue/config/": "server",
-        "scue/main.py": "server",
-        "scue/project/": "server",
-        "scue/ui/": "server",
-        "frontend/": "frontend",
-    }
+    # Order matters: longer prefixes checked first (strata before layer1)
+    SECTION_PATHS = [
+        ("scue/layer1/strata/", "strata"),
+        ("scue/bridge/", "bridge"),
+        ("scue/network/", "bridge"),
+        ("scue/layer1/", "analysis"),
+        ("scue/layer2/", "pipeline"),
+        ("scue/layer3/", "pipeline"),
+        ("scue/layer4/", "pipeline"),
+        ("scue/api/", "server"),
+        ("scue/config/", "server"),
+        ("scue/main.py", "server"),
+        ("scue/project/", "server"),
+        ("scue/ui/", "server"),
+        ("frontend/", "frontend"),
+    ]
 
     def test_all_python_source_claimed(self, scue_python_files: list[Path]) -> None:
         """Every Python source file in scue/ belongs to a section."""
@@ -323,7 +354,7 @@ class TestSectionFileCoverage:
                 continue
             if rel.startswith(".claude/") or rel == "scue/__init__.py":
                 continue
-            claimed = any(rel.startswith(prefix) for prefix in self.SECTION_PATHS)
+            claimed = any(rel.startswith(prefix) for prefix, _ in self.SECTION_PATHS)
             if not claimed:
                 unclaimed.append(rel)
         assert not unclaimed, (
