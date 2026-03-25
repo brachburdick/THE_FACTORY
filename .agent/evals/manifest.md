@@ -7,7 +7,7 @@
 
 | Artifact | Version | Date | Change Summary |
 |----------|---------|------|----------------|
-| CLAUDE.md (constitution) | v2.1.1 | 2026-03-24 | Section-review trigger, eval count ~72 |
+| CLAUDE.md (constitution) | v2.1.2 | 2026-03-25 | Token Dashboard section, scripts/ and reports/ in workspace layout |
 | debug-flow | v2.1.0 | 2026-03-24 | 2-attempt cap (was 3), diagnostic-before-visual rule |
 | feature-flow | v2.1.0 | 2026-03-24 | 2-attempt retry cap (was 3) |
 | refactor-flow | v2.1.0 | 2026-03-24 | 2-attempt retry cap (was 3) |
@@ -20,6 +20,7 @@
 | templates/section-contract.md | v1.0.0 | 2026-03-24 | 1-page section contract template |
 | templates/handoff-packet.md | v1.1.0 | 2026-03-20 | Replan triggers, verification procedure |
 | SYNTROPY.md | v1.0.0 | 2026-03-24 | 8 principles distilled from 26-file research archive |
+| token-dashboard.py | v1.0.0 | 2026-03-25 | Token consumption & context usage dashboard — monitor, compare, projects tabs + recency/project filtering |
 
 ## Eval Suite
 

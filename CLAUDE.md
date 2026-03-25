@@ -81,8 +81,10 @@ THE_FACTORY/
 │   ├── runs.jsonl         ← run records
 │   ├── state-snapshot.json← session continuity
 │   ├── evals/             ← eval specs (.eval.md)
+│   ├── reports/           ← generated dashboards (token-dashboard.html)
 │   └── schemas/           ← JSON schemas
 ├── evals/                 ← executable eval suite (pytest)
+├── scripts/               ← tooling (index, assess, experiment, token-dashboard)
 ├── skills/                ← portfolio-level skills
 ├── projects/              ← CRUCIBLE, DjTools/scue, Tinyshop, enable/
 ├── templates/             ← spec, plan, handoff, tasks
@@ -93,6 +95,15 @@ THE_FACTORY/
 Run: `python scripts/experiment.py --list-tasks` / `--list-variants`
 Compare: `python scripts/experiment.py --task tasks/fix-short-track-bpm.py --variants variants/baseline.yaml variants/minimal.yaml`
 Assess: `python scripts/assess.py --last 20`
+
+## Token Dashboard
+Visualizes token consumption & context window usage across Claude Code sessions.
+Run: `python3 scripts/token-dashboard.py --last 30` (or `--project SCUE`, `--context-size 1000000`)
+Output: `.agent/reports/token-dashboard.html` (open in browser)
+- **Monitor tab**: toggle sessions on/off, each gets burn rate + context fill charts (expandable to per-turn cost + tool breakdown)
+- **Compare tab**: overlay burn rate and context fill curves for up to 5 sessions
+- **Projects tab**: aggregate token stats per project
+- **Filter bar**: recency (Last 10 / 24h / 7d / 30d / All) + project dropdown, persists across all tabs
 
 ## Version
 - **Current:** v2.1.0 (2026-03-23)

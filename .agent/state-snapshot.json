@@ -1,14 +1,17 @@
 {
   "session_id": "2335ef57-7e5d-4dfa-8e40-dbcbed5f9ac4",
-  "timestamp": "2026-03-25T15:02:42Z",
+  "timestamp": "2026-03-25T16:32:35Z",
   "project_root": "/Users/brach/Documents/THE_FACTORY",
   "branch": "v2.2",
-  "last_commit": "8dbeb03fd26b04554bb41f0b8e215d5ad807adbc implementing enforcement of context silos in app development",
+  "last_commit": "068722a2c4dde6276c611f4438797257f3bea800 finished resource visualizer",
   "modified_files": [
+    ".agent/evals/manifest.md",
     ".agent/reports/token-dashboard.html",
-    ".claude/.DS_Store",
-    ".claude/skills/.DS_Store",
-    "evals/.DS_Store",
+    ".agent/runs.jsonl",
+    ".agent/state-snapshot.json",
+    ".agent/tasks.jsonl",
+    "CLAUDE.md",
+    "evals/__pycache__/test_conventions.cpython-313-pytest-9.0.2.pyc",
     "scripts/token-dashboard.py"
   ],
   "staged_files": [],

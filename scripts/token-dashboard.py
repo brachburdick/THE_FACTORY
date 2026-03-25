@@ -608,8 +608,9 @@ td { color: var(--text); }
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+  overflow: hidden;
 }
-.panel-charts .chart-wrap { height: 200px; }
+.panel-charts .chart-wrap { height: 200px; min-width: 0; }
 .panel-expand-btn {
   background: none;
   border: 1px solid var(--card-border);
@@ -629,7 +630,7 @@ td { color: var(--text); }
   margin-top: 16px;
 }
 .panel-extra.open { display: grid; }
-.panel-extra .chart-wrap { height: 200px; }
+.panel-extra .chart-wrap { height: 200px; min-width: 0; }
 .filter-bar {
   display: flex;
   align-items: center;
@@ -662,10 +663,18 @@ td { color: var(--text); }
   border-color: var(--chip-active);
   color: white;
 }
-@media (max-width: 900px) {
+@media (max-width: 768px) {
   .chart-grid { grid-template-columns: 1fr; }
+  .panel-charts { grid-template-columns: 1fr; }
+  .panel-extra { grid-template-columns: 1fr; }
+  .panel-extra.open { grid-template-columns: 1fr; }
   header { flex-wrap: wrap; }
+  header .stats { margin-left: 0; width: 100%; margin-top: 4px; }
   .filter-bar { padding: 12px 16px; }
+  nav { padding: 0 16px; }
+  .tab-content { padding: 16px; }
+  .panel-header { gap: 8px; }
+  .panel-header .stat { font-size: 11px; }
 }
 </style>
 </head>
