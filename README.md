@@ -1,12 +1,17 @@
 # Hey uh
 
 still working on better docs
+
 you dont have to read all this shit
 
+
 just git clone and tell claude to look at the INIT.md
+
 still working on the agent->human prompt to take action & self-identification of areas needing clarity
 
+
 if you dont know what to do, ask what's next
+
 if you want to understand it better, ask it how the pipeline works
 
 
