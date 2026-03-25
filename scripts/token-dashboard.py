@@ -1198,10 +1198,16 @@ function applyFilters() {
   document.getElementById("header-stats").textContent =
     `${filtered.length} of ${DATA.length} sessions | ${fmt(totalTok)} tokens | Context: ${fmt(CTX_SIZE)}`;
 
-  // Session detail
-  rebuildPicker();
-  if (filtered.length) renderSession(0);
-  else document.getElementById("session-summary").innerHTML = '<div class="summary-card"><div class="label">No sessions match filters</div></div>';
+  // Monitor panels
+  // Auto-activate first session if nothing is active
+  if (activeSessionIds.size === 0 && filtered.length) activeSessionIds.add(filtered[0].session_id);
+  // Remove active sessions that are no longer in filtered set
+  const filteredIds = new Set(filtered.map(s => s.session_id));
+  for (const sid of activeSessionIds) {
+    if (!filteredIds.has(sid)) activeSessionIds.delete(sid);
+  }
+  rebuildToggles();
+  renderPanels();
 
   // Compare
   renderCompareChips();

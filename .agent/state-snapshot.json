@@ -1,25 +1,15 @@
 {
   "session_id": "2335ef57-7e5d-4dfa-8e40-dbcbed5f9ac4",
-  "timestamp": "2026-03-25T14:25:18Z",
+  "timestamp": "2026-03-25T15:02:42Z",
   "project_root": "/Users/brach/Documents/THE_FACTORY",
   "branch": "v2.2",
-  "last_commit": "0f2aec04bd71f2ee78f960de1c39c5a0b49d3074 implement project segregation into pipeline for agent-boundaries",
+  "last_commit": "8dbeb03fd26b04554bb41f0b8e215d5ad807adbc implementing enforcement of context silos in app development",
   "modified_files": [
-    ".agent/evals/manifest.md",
-    ".agent/runs.jsonl",
-    ".agent/state-snapshot.json",
-    ".agent/tasks.jsonl",
+    ".agent/reports/token-dashboard.html",
     ".claude/.DS_Store",
-    ".claude/launch.json",
-    ".claude/settings.json",
     ".claude/skills/.DS_Store",
-    ".claude/skills/feature-flow/SKILL.md",
-    ".claude/skills/refactor-flow/SKILL.md",
-    "CLAUDE.md",
     "evals/.DS_Store",
-    "evals/__pycache__/test_conventions.cpython-313-pytest-9.0.2.pyc",
-    "evals/test_conventions.py",
-    "skills/section-review/SKILL.md"
+    "scripts/token-dashboard.py"
   ],
   "staged_files": [],
   "active_tasks": [
