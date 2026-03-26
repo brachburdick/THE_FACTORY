@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Improvement Candidate",
+  "description": "Schema for entries in .agent/improvement-candidates.jsonl",
+  "type": "object",
+  "required": ["id", "source", "date", "description"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^imp-[0-9]{3,}$",
+      "description": "Unique identifier (e.g., imp-001)"
+    },
+    "source": {
+      "type": "string",
+      "enum": ["session", "assess", "calibration", "incident", "operator", "mining"],
+      "description": "How this candidate was identified"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the candidate was identified"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 10,
+      "description": "Brief description of the improvement"
+    },
+    "evidence": {
+      "type": ["string", "null"],
+      "description": "Quantified data supporting this candidate"
+    },
+    "decision": {
+      "type": ["string", "null"],
+      "enum": ["accept", "defer", "reject", "superseded", null],
+      "description": "Triage decision (null = untriaged)"
+    },
+    "rationale": {
+      "type": ["string", "null"],
+      "description": "Why this decision was made"
+    },
+    "task_id": {
+      "type": ["string", "null"],
+      "description": "Linked task ID if accepted (e.g., tf-070)"
+    },
+    "triaged_date": {
+      "type": ["string", "null"],
+      "format": "date",
+      "description": "Date the triage decision was made"
+    }
+  }
+}
