@@ -100,8 +100,14 @@ context that causes mid-build reversals, scope creep, and wasted fix-attempts.
 6. **Prior work check:** For each file in the plan's scope, check: does it already contain
    the expected changes? Check `.agent/state-snapshot.json` — a prior session may have
    partially completed this work.
+7. **Ambiguity check:** Scan the task description and acceptance criteria for vague terms:
+   "improve", "optimize", "clean up", "better", "faster", "more robust", "enhance".
+   If found WITHOUT quantified criteria (numbers, thresholds, specific behaviors), flag
+   to the operator: _"Task uses '{term}' without measurable criteria. What does success
+   look like?"_ This is guidance, not a hard block — but vague tasks are the #1 cause
+   of scope creep and mid-build reversals. See Oversight Policy in CLAUDE.md.
 
-**Gate:** All 6 checks pass. If any fail, resolve before entering Phase 3.
+**Gate:** All 7 checks pass. If any fail, resolve before entering Phase 3.
 
 ## Phase 3: Implement
 **Goal:** Build the feature according to the plan.

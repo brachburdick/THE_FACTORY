@@ -61,8 +61,14 @@ context that causes scope creep and wasted fix-attempts.
 5. **No conflicting in-progress tasks:** Check `.agent/tasks.jsonl` for other `in_progress`
    tasks touching the same files or section. If a conflict exists, coordinate with the
    operator or wait.
+6. **Ambiguity check:** Scan the task description for vague terms: "clean up", "simplify",
+   "improve", "better", "reduce complexity". If found WITHOUT measurable structural goals
+   (e.g., "extract X into module", "reduce file from N to M lines", "remove coupling
+   between A and B"), flag to the operator: _"Task uses '{term}' without structural
+   criteria. What does the code look like when done?"_ Guidance, not a hard block.
+   See Oversight Policy in CLAUDE.md.
 
-**Gate:** All 5 checks pass. If any fail, resolve before entering Phase 2.
+**Gate:** All 6 checks pass. If any fail, resolve before entering Phase 2.
 
 ## Phase 2: Snapshot
 **Goal:** Establish a behavioral baseline before any changes.
