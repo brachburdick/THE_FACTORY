@@ -366,3 +366,14 @@ class TestJsonlSchemaValidation:
         entries = self._load_jsonl("incidents.jsonl")
         if not entries:
             pytest.skip("No incident entries")
+
+    def test_trigger_misses_match_schema(self) -> None:
+        """Every trigger-miss entry has required fields and valid enum values."""
+        schema = self._load_schema("trigger-miss.schema.json")
+        if not schema:
+            pytest.skip("trigger-miss.schema.json not found")
+        entries = self._load_jsonl("trigger-misses.jsonl")
+        if not entries:
+            pytest.skip("No trigger-miss entries")
+        self._validate_required_fields(entries, schema, "trigger-misses.jsonl")
+        self._validate_enum_fields(entries, schema, "trigger-misses.jsonl")

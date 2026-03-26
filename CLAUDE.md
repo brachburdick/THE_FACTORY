@@ -65,6 +65,7 @@ New enforcement mechanisms belong in the loop matching their speed. Inner-loop g
 - Append run record to `.agent/runs.jsonl` on task completion
 - Log incidents to `.agent/incidents.jsonl` on failure
 - File eval cases for recurring failure patterns
+- Log trigger misses to `.agent/trigger-misses.jsonl` when no trigger table entry matches the task input (feeds P6 LLM fallback classifier)
 
 ## Project Isolation
 THE_FACTORY is the pipeline/process repo. **Project source code must never be tracked by this repo.** Each project under `projects/` has its own git repo and its own CLAUDE.md. The `.gitignore` enforces this — do not override it. If you need to reference project structure in pipeline docs, use generic examples, not real project paths or content.
