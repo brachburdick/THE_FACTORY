@@ -4,6 +4,27 @@ description: >
   Use when the task involves restructuring code without changing behavior.
   Signals: "refactor", "extract", "consolidate", "clean up", "simplify",
   "reorganize", "dedup", "reduce complexity", "split", "merge module".
+inputs:
+  - task entry in .agent/tasks.jsonl with refactor scope
+  - existing test suite for behavioral baseline
+  - project CLAUDE.md for structural conventions
+outputs:
+  - refactor commits preserving all existing behavior
+  - characterization tests (if coverage was insufficient)
+  - run record in .agent/runs.jsonl
+  - section contract updates (if boundaries changed)
+success_criteria:
+  - test results identical to Phase 2 snapshot (same passes, same failures)
+  - no behavioral changes introduced
+  - scope stayed within defined refactor boundary
+  - run record written with task_id cross-reference
+  - separate-context verification completed
+failure_policy: >
+  If tests fail after transform and 2 revert-fix cycles don't resolve it,
+  stop. Revert to the pre-transform state. Log incident to
+  .agent/incidents.jsonl with what structural change caused the failure.
+  Escalate to operator using the abstain packet format
+  (templates/handoff-packet.md).
 ---
 
 # Refactor Flow: Scope → Snapshot → Transform → Verify

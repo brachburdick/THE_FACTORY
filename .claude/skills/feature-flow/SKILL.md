@@ -5,6 +5,28 @@ description: >
   implementing a user story, creating a new endpoint/resolver/component, or
   extending existing behavior. Signals: "implement", "add", "create", "new",
   "build", "feature", "endpoint", "resolver", "component".
+inputs:
+  - task entry in .agent/tasks.jsonl with feature description
+  - spec document (templates/spec.md) or sufficient intent for Phase 0
+  - project CLAUDE.md for domain context and constraints
+outputs:
+  - implementation commits with tests
+  - spec document (created or updated)
+  - run record in .agent/runs.jsonl
+  - section contract updates (if boundaries changed)
+success_criteria:
+  - spec exists with defined inputs, outputs, edge cases
+  - all acceptance criteria from spec are covered by tests
+  - all new tests pass, no regressions in existing tests
+  - new imports declared in dependency manifests
+  - run record written with task_id cross-reference
+  - separate-context verification completed against spec criteria
+failure_policy: >
+  After 2 failed implementation attempts, stop. Log incident to
+  .agent/incidents.jsonl. Escalate to operator with current state: what
+  was attempted, what failed, and recommended next steps. Use the abstain
+  packet format (templates/handoff-packet.md). Do not continue without
+  operator input.
 ---
 
 # Feature Flow: Intent → Spec → Plan → Implement → Test → Verify

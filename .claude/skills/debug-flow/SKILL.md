@@ -4,6 +4,26 @@ description: >
   Use when the task involves fixing a bug, error, regression, failing test,
   unexpected behavior, or production incident. Signals: "fix", "broken",
   "failing", "error", "regression", "not working", "crash", "timeout".
+inputs:
+  - task entry in .agent/tasks.jsonl with bug description
+  - reproduction steps or failing test path (if available)
+  - project CLAUDE.md for domain context
+outputs:
+  - fix commit with passing reproduction test
+  - run record in .agent/runs.jsonl
+  - incident record in .agent/incidents.jsonl (if escalated)
+  - eval case in .agent/evals/ (if pattern is recurring)
+success_criteria:
+  - reproduction test exists and passes after fix
+  - no new test failures (regression-free)
+  - root cause documented in commit message
+  - run record written with task_id cross-reference
+  - separate-context verification completed
+failure_policy: >
+  After 2 failed fix attempts, stop. Log incident to .agent/incidents.jsonl
+  with diagnostic summary. Escalate to operator via AskUserQuestion using
+  the abstain packet format (templates/handoff-packet.md). Do not continue
+  iterating without operator input.
 ---
 
 # Debug Flow: Reproduce → Isolate → Diagnose → Fix → Verify

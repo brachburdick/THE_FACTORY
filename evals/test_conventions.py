@@ -71,6 +71,35 @@ class TestAllSkillsHaveFrontmatter:
             + "\n".join(f"  - {v}" for v in violations)
         )
 
+    def test_flow_skills_have_extended_frontmatter(self) -> None:
+        """Flow skills (debug, feature, refactor) have extended frontmatter fields."""
+        flow_skills = [
+            ROOT / ".claude" / "skills" / "debug-flow" / "SKILL.md",
+            ROOT / ".claude" / "skills" / "feature-flow" / "SKILL.md",
+            ROOT / ".claude" / "skills" / "refactor-flow" / "SKILL.md",
+        ]
+        extended_fields = ["inputs:", "outputs:", "success_criteria:", "failure_policy:"]
+        violations = []
+        for skill in flow_skills:
+            if not skill.exists():
+                violations.append(f"{skill.relative_to(ROOT)}: file not found")
+                continue
+            text = skill.read_text()
+            parts = text.split("---", 2)
+            if len(parts) < 3:
+                violations.append(f"{skill.relative_to(ROOT)}: malformed frontmatter")
+                continue
+            fm = parts[1]
+            for field in extended_fields:
+                if field not in fm:
+                    violations.append(
+                        f"{skill.relative_to(ROOT)}: missing '{field.rstrip(':')}'"
+                    )
+        assert not violations, (
+            f"Flow skill extended frontmatter issues:\n"
+            + "\n".join(f"  - {v}" for v in violations)
+        )
+
 
 # ── pipeline-level: native hooks settings valid ─────────────────────────
 # Rule: settings.json is valid JSON and all referenced hook scripts exist.
