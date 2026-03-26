@@ -45,16 +45,17 @@ THE_FACTORY operates at three speeds with different gate strictness:
 
 | Loop | Speed | Mechanisms | Gate |
 |---|---|---|---|
-| **Inner** (edit→test→fix) | Seconds | fix-attempt-tracker (2-cap), lint, unit tests | Automatic — hooks enforce |
-| **Middle** (design→implement→integrate) | Minutes | section boundary checks, plan-gate, risk classifier, spec approval | Semi-automatic — hooks + operator at checkpoints |
+| **Inner** (edit→test→fix) | Seconds | fix-attempt-tracker (2-cap + compound budget), lint, unit tests | Automatic — hooks enforce |
+| **Middle** (design→implement→integrate) | Minutes | section boundary checks, blast-radius scope check, plan-gate, risk classifier, spec approval | Semi-automatic — hooks + operator at checkpoints |
 | **Outer** (release→observe→learn) | Days/weeks | assess.py trends, DORA-like metrics, run record analysis, calibration reviews | Operator-driven — data informs threshold tuning |
 
 New enforcement mechanisms belong in the loop matching their speed. Inner-loop gates must be fast and deterministic. Middle-loop gates can require operator input. Outer-loop mechanisms are observational — they feed future threshold changes, not real-time blocks.
 
 ## What Hooks Enforce (don't duplicate in prose)
 - Git guard: no commits to main, no force-push, no reset --hard (fail-closed, no jq dependency)
-- Fix-attempt tracker: blocks after 2 source mutations (Edit/Write) without running tests; resets on test run
+- Fix-attempt tracker: blocks after 2 source mutations (Edit/Write) without running tests; resets on test run. Compound budget tracks total mutations per phase (low=15, medium=7, high=4); resets on `budget-reset`
 - Risk classifier: reads task risk level (low/medium/high), blocks high-risk source mutations without approved plan
+- Blast radius: cross-references Edit/Write paths against active task's section contract owned_paths; blocks out-of-scope mutations when section is assigned
 - State snapshot: branch, commit, tasks, modified files persisted at session end (valid JSON via Python)
 - Audit run record: warns if no run record written during session
 - Langfuse trace: session metrics sent to Langfuse (when configured)

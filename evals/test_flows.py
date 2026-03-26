@@ -392,6 +392,100 @@ class TestRiskClassifierHook:
         assert result.returncode == 2, f"Expected block (exit 2) for inferred high-risk, got {result.returncode}"
 
 
+# ── blast-radius hook tests ──────────────────────────────────────────────
+# Direct tests of blast-radius.sh behavior.
+
+
+@pytest.mark.flow
+class TestBlastRadiusHook:
+    """blast-radius.sh enforces section scope on Edit/Write paths (tf-025)."""
+
+    HOOK = ROOT / ".claude" / "hooks" / "blast-radius.sh"
+
+    def _setup_project(self, tmpdir: str, section_name: str, owned_paths: list[str],
+                       task_section: str | None = None, task_project: str = "testproj") -> str:
+        """Create a temp project with section contract and tasks file."""
+        import os
+        # Create project structure
+        proj_dir = os.path.join(tmpdir, "projects", task_project)
+        sections_dir = os.path.join(proj_dir, "sections")
+        os.makedirs(sections_dir, exist_ok=True)
+        os.makedirs(os.path.join(tmpdir, ".agent"), exist_ok=True)
+
+        # Write section contract
+        owned_block = "\n".join(owned_paths)
+        contract = f"# Section: {section_name}\n\n## Owned Paths\n```\n{owned_block}\n```\n\n## Invariants\n- none\n"
+        with open(os.path.join(sections_dir, f"{section_name}.md"), "w") as f:
+            f.write(contract)
+
+        # Write tasks file
+        task = {
+            "id": "test-blast",
+            "taskType": "feature",
+            "status": "in_progress",
+            "summary": "Test task for blast radius",
+        }
+        if task_section:
+            task["section"] = task_section
+            task["project"] = task_project
+        with open(os.path.join(tmpdir, ".agent", "tasks.jsonl"), "w") as f:
+            f.write(json.dumps(task) + "\n")
+
+        return tmpdir
+
+    def _run_hook(self, tool_name: str, file_path: str, project_dir: str) -> subprocess.CompletedProcess[str]:
+        """Run blast-radius hook with given project dir."""
+        payload = {"tool_name": tool_name, "tool_input": {"file_path": file_path}}
+        env = dict(__import__("os").environ)
+        env["CLAUDE_PROJECT_DIR"] = project_dir
+        return subprocess.run(
+            ["bash", str(self.HOOK)],
+            input=json.dumps(payload),
+            capture_output=True,
+            text=True,
+            timeout=5,
+            env=env,
+            cwd=project_dir,
+        )
+
+    def test_allows_when_no_section_assigned(self) -> None:
+        """Tasks without a section field are always allowed."""
+        tmpdir = tempfile.mkdtemp()
+        self._setup_project(tmpdir, "bridge", ["scue/bridge/"], task_section=None)
+        result = self._run_hook("Edit", f"{tmpdir}/projects/testproj/scue/api/routes.py", tmpdir)
+        assert result.returncode == 0
+
+    def test_allows_file_in_owned_path(self) -> None:
+        """File within section's owned paths is allowed."""
+        tmpdir = tempfile.mkdtemp()
+        self._setup_project(tmpdir, "bridge", ["scue/bridge/", "scue/network/"], task_section="bridge")
+        result = self._run_hook("Edit", f"{tmpdir}/projects/testproj/scue/bridge/adapter.py", tmpdir)
+        assert result.returncode == 0
+
+    def test_blocks_file_outside_owned_path(self) -> None:
+        """File outside section's owned paths is blocked."""
+        tmpdir = tempfile.mkdtemp()
+        self._setup_project(tmpdir, "bridge", ["scue/bridge/", "scue/network/"], task_section="bridge")
+        result = self._run_hook("Edit", f"{tmpdir}/projects/testproj/scue/api/routes.py", tmpdir)
+        assert result.returncode == 2, f"Expected block, got {result.returncode}: {result.stderr}"
+        assert "BLOCKED" in result.stderr
+        assert "outside section scope" in result.stderr
+
+    def test_allows_non_source_files(self) -> None:
+        """Non-source files (md, json, etc.) are always allowed."""
+        tmpdir = tempfile.mkdtemp()
+        self._setup_project(tmpdir, "bridge", ["scue/bridge/"], task_section="bridge")
+        result = self._run_hook("Edit", f"{tmpdir}/projects/testproj/README.md", tmpdir)
+        assert result.returncode == 0
+
+    def test_allows_test_files(self) -> None:
+        """Test files are always allowed regardless of section."""
+        tmpdir = tempfile.mkdtemp()
+        self._setup_project(tmpdir, "bridge", ["scue/bridge/"], task_section="bridge")
+        result = self._run_hook("Edit", f"{tmpdir}/projects/testproj/tests/test_api.py", tmpdir)
+        assert result.returncode == 0
+
+
 # ── skill-triggers-correctly ─────────────────────────────────────────────
 # Source: .agent/evals/skills/skill-triggers-correctly.eval.md
 

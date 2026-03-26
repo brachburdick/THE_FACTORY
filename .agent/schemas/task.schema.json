@@ -48,6 +48,14 @@
       "enum": ["low", "medium", "high"],
       "description": "Task risk level. Determines autonomy tier: low=auto-approve, medium=plan-gate+2-cap, high=require approved plan for any source mutation. Inferred from keywords if not set."
     },
+    "section": {
+      "type": "string",
+      "description": "Section name for blast radius enforcement. Must match a section contract file in the project's sections/ directory (e.g., 'bridge', 'analysis')."
+    },
+    "project": {
+      "type": "string",
+      "description": "Project path relative to projects/ directory (e.g., 'DjTools/scue'). Used with section for blast radius scope check."
+    },
     "batch": {
       "type": "string",
       "description": "Improvement batch grouping (e.g., v22-batch1)"
