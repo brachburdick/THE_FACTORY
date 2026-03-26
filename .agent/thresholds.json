@@ -1,0 +1,16 @@
+{
+  "fix_attempt_cap": 2,
+  "compound_budget": {
+    "low": 15,
+    "medium": 7,
+    "high": 4
+  },
+  "pr_size_warning_loc": 200,
+  "flakiness_threshold_pct": 10,
+  "flakiness_min_runs": 20,
+  "session_scope_max_objectives": 2,
+  "dedup_window_minutes": 60,
+  "updated": "2026-03-27",
+  "review_quarter": "Q1 2026",
+  "notes": "Initial thresholds — baseline values from v2.0 hooks and flow skill guidance. Review quarterly using templates/calibration-review.md."
+}
