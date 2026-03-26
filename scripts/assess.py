@@ -217,6 +217,98 @@ def score_sessions(sessions: list[dict[str, Any]]) -> dict[str, Any]:
     return report
 
 
+def compute_slos(count: int = 20) -> dict[str, Any]:
+    """Compute pipeline SLO metrics from runs.jsonl.
+
+    Returns dict with metric name → {value, target, status} for each SLO.
+    """
+    runs_file = AGENT_DIR / "runs.jsonl"
+    if not runs_file.exists():
+        return {}
+
+    runs = []
+    for line in runs_file.read_text().splitlines():
+        line = line.strip()
+        if line:
+            try:
+                runs.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+
+    # Take last N runs
+    runs = runs[-count:]
+    if not runs:
+        return {}
+
+    total = len(runs)
+    slos: dict[str, Any] = {}
+
+    # 1. Completion Rate: % success
+    success_count = sum(1 for r in runs if r.get("result") == "success")
+    completion_rate = round(success_count / total * 100, 1)
+    slos["completion_rate"] = {
+        "value": completion_rate,
+        "target": 80.0,
+        "unit": "%",
+        "status": "met" if completion_rate >= 80.0 else "missed",
+    }
+
+    # 2. Rework Rate: % of task_ids appearing in 2+ runs
+    task_counts: dict[str, int] = {}
+    for r in runs:
+        tid = r.get("task_id", "")
+        if tid:
+            task_counts[tid] = task_counts.get(tid, 0) + 1
+    reworked = sum(1 for c in task_counts.values() if c >= 2)
+    unique_tasks = len(task_counts)
+    rework_rate = round(reworked / unique_tasks * 100, 1) if unique_tasks else 0.0
+    slos["rework_rate"] = {
+        "value": rework_rate,
+        "target": 15.0,
+        "unit": "%",
+        "status": "met" if rework_rate <= 15.0 else "missed",
+    }
+
+    # 3. Escalation Rate: % blocked
+    blocked_count = sum(1 for r in runs if r.get("result") == "blocked")
+    escalation_rate = round(blocked_count / total * 100, 1)
+    slos["escalation_rate"] = {
+        "value": escalation_rate,
+        "target": 20.0,
+        "unit": "%",
+        "status": "met" if escalation_rate <= 20.0 else "missed",
+    }
+
+    # 4. Test-Gate Failure Rate: % with evals_failed > 0
+    test_fail_count = sum(1 for r in runs if (r.get("evals_failed") or 0) > 0)
+    test_fail_rate = round(test_fail_count / total * 100, 1)
+    slos["test_gate_failure_rate"] = {
+        "value": test_fail_rate,
+        "target": 5.0,
+        "unit": "%",
+        "status": "met" if test_fail_rate <= 5.0 else "missed",
+    }
+
+    # 5. Operator Review Latency (if data exists, tf-053)
+    latencies = [
+        r["time_to_operator_response"]
+        for r in runs
+        if "time_to_operator_response" in r and r["time_to_operator_response"] is not None
+    ]
+    if latencies:
+        latencies.sort()
+        median_latency = latencies[len(latencies) // 2]
+        slos["operator_review_latency"] = {
+            "value": median_latency,
+            "target": None,  # No target yet — measuring first
+            "unit": "minutes",
+            "status": "measuring",
+            "sample_size": len(latencies),
+        }
+
+    return slos
+
+
 def generate_improvements(report: dict[str, Any]) -> list[dict[str, Any]]:
     """Generate improvement candidates from assessment report."""
     candidates = []
@@ -278,6 +370,16 @@ def assess(count: int, out_path: str | None = None) -> None:
         print(f"\n--- vs. Phase 0 Baselines ---")
         for key, val in report["vs_baseline"].items():
             print(f"  {key}: {val}")
+
+    # Pipeline SLOs from runs.jsonl
+    slos = compute_slos(count)
+    if slos:
+        report["slos"] = slos
+        print(f"\n--- Pipeline SLOs (last {count} runs) ---")
+        for name, slo in slos.items():
+            target_str = f"target: {'≤' if name in ('rework_rate', 'escalation_rate', 'test_gate_failure_rate') else '≥'}{slo['target']}{slo['unit']}" if slo.get('target') is not None else "measuring"
+            status = "✓" if slo["status"] == "met" else ("📊" if slo["status"] == "measuring" else "✗")
+            print(f"  {status} {name}: {slo['value']}{slo['unit']} ({target_str})")
 
     # Generate improvements
     candidates = generate_improvements(report)
