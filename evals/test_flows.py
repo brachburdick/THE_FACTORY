@@ -206,18 +206,28 @@ class TestFixAttemptTrackerHook:
         )
 
     def _reset_state(self) -> None:
-        """Reset the state file to 0/0 (fix-count / total-budget)."""
-        self.STATE_FILE.write_text("0\n0\n")
+        """Reset the state file to 0/0/0/ (fix/total/cycles/files)."""
+        self.STATE_FILE.write_text("0\n0\n0\n\n")
 
     def _read_fix_count(self) -> int:
         """Read line 1: mutations since last test."""
         lines = self.STATE_FILE.read_text().strip().split("\n")
-        return int(lines[0]) if lines else 0
+        return int(lines[0]) if lines and lines[0] else 0
 
     def _read_total_count(self) -> int:
         """Read line 2: total mutations this phase (compound budget)."""
         lines = self.STATE_FILE.read_text().strip().split("\n")
-        return int(lines[1]) if len(lines) > 1 else 0
+        return int(lines[1]) if len(lines) > 1 and lines[1] else 0
+
+    def _read_test_cycles(self) -> int:
+        """Read line 3: number of edit-test cycles."""
+        lines = self.STATE_FILE.read_text().strip().split("\n")
+        return int(lines[2]) if len(lines) > 2 and lines[2] else 0
+
+    def _read_modified_files(self) -> str:
+        """Read line 4: comma-separated modified file basenames."""
+        lines = self.STATE_FILE.read_text().split("\n")
+        return lines[3] if len(lines) > 3 else ""
 
     def setup_method(self) -> None:
         """Reset state before each test."""
@@ -298,22 +308,66 @@ class TestFixAttemptTrackerHook:
         assert self._read_fix_count() == 0, "Fix count should be 0 after test"
         assert self._read_total_count() == 6, "Total should accumulate across resets"
 
-    def test_budget_reset_clears_both_counters(self) -> None:
-        """budget-reset Bash command resets both counters."""
+    def test_budget_reset_clears_all_counters(self) -> None:
+        """budget-reset Bash command resets all counters and state."""
         self._run_hook("Edit", file_path="/project/src/a.py")
         self._run_hook("Edit", file_path="/project/src/b.py")
-        assert self._read_total_count() == 2
+        self._run_hook("Bash", command="pytest tests/")  # creates a cycle
+        self._run_hook("Edit", file_path="/project/src/c.py")
+        assert self._read_total_count() == 3
+        assert self._read_test_cycles() == 1
         self._run_hook("Bash", command="echo budget-reset")
         assert self._read_fix_count() == 0, "Fix count should reset"
-        assert self._read_total_count() == 0, "Total should reset on budget-reset"
+        assert self._read_total_count() == 0, "Total should reset"
+        assert self._read_test_cycles() == 0, "Cycles should reset"
+        assert self._read_modified_files() == "", "Modified files should clear"
 
     def test_budget_block_message(self) -> None:
         """When total mutations exceed default (medium=7) budget, block."""
-        # Write state directly to simulate being at budget limit
-        self.STATE_FILE.write_text("0\n7\n")
+        self.STATE_FILE.write_text("0\n7\n0\n\n")
         result = self._run_hook("Edit", file_path="/project/src/overflow.py")
         assert result.returncode == 2, f"Expected budget block, got {result.returncode}"
         assert "BUDGET EXHAUSTED" in result.stderr
+
+    def test_circuit_breaker_spiral(self) -> None:
+        """Edit-test spiral detection blocks after cycle threshold (medium=3)."""
+        # Simulate 3 edit-test cycles
+        for _ in range(3):
+            self._run_hook("Edit", file_path="/project/src/a.py")
+            self._run_hook("Bash", command="pytest tests/")
+        assert self._read_test_cycles() == 3
+        # Next edit should be blocked by circuit breaker
+        result = self._run_hook("Edit", file_path="/project/src/a.py")
+        assert result.returncode == 2, f"Expected circuit breaker, got {result.returncode}"
+        assert "CIRCUIT BREAKER" in result.stderr
+        assert "spiral" in result.stderr.lower()
+
+    def test_test_cycle_only_counts_when_mutations_exist(self) -> None:
+        """Test runs without preceding mutations don't increment cycle counter."""
+        self._run_hook("Bash", command="pytest tests/")
+        self._run_hook("Bash", command="pytest tests/")
+        self._run_hook("Bash", command="pytest tests/")
+        assert self._read_test_cycles() == 0, "Empty test runs shouldn't count as cycles"
+
+    def test_tracks_modified_files(self) -> None:
+        """Modified files are tracked across mutations."""
+        self._run_hook("Edit", file_path="/project/src/foo.py")
+        self._run_hook("Edit", file_path="/project/src/bar.py")
+        self._run_hook("Bash", command="pytest tests/")
+        self._run_hook("Edit", file_path="/project/src/foo.py")  # duplicate
+        files = self._read_modified_files()
+        assert "foo.py" in files
+        assert "bar.py" in files
+
+    def test_circuit_breaker_drift(self) -> None:
+        """Drift detection blocks when too many unique files modified (medium=8)."""
+        # Write state with 8 already-tracked files + 0 fix count
+        files = ",".join([f"f{i}.py" for i in range(8)])
+        self.STATE_FILE.write_text(f"0\n0\n0\n{files}\n")
+        result = self._run_hook("Edit", file_path="/project/src/new_file.py")
+        assert result.returncode == 2, f"Expected drift block, got {result.returncode}"
+        assert "CIRCUIT BREAKER" in result.stderr
+        assert "drift" in result.stderr.lower()
 
 
 # ── risk-classifier hook tests ────────────────────────────────────────────
