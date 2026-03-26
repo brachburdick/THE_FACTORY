@@ -123,6 +123,10 @@ context that causes mid-build reversals, scope creep, and wasted fix-attempts.
 3. **Write a run record to `.agent/runs.jsonl`** with these required fields:
    `run_id`, `date`, `project_id`, `task_id` (must match the tasks.jsonl `id`),
    `task_type`, `result` (success|partial|failed|blocked|escalated), `summary`.
+   Also populate observability fields when applicable:
+   - `time_to_operator_response`: minutes from first checkpoint to operator reply (null if none)
+   - `operator_interventions`: count of operator corrections/re-directions (0 if autonomous)
+   - `agent_escalations`: count of AskUserQuestion / blocked / incident escalations
 4. **Git:** Commit the run record: `close: run record + verify for {task-id}`.
 5. If the feature introduced a new pattern that future features should follow,
    note it in the relevant domain skill's `references/` directory.

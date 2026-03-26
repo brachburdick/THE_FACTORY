@@ -60,6 +60,21 @@
       "type": "boolean",
       "description": "Whether this record was retroactively created"
     },
+    "time_to_operator_response": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "description": "Minutes from first operator-gated checkpoint (spec approval, plan approval, AskUserQuestion) to operator response. Null if no checkpoint occurred. Populate at task close by checking session timestamps."
+    },
+    "operator_interventions": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of times the operator intervened (corrections, re-directions, scope changes) during this run. 0 means fully autonomous."
+    },
+    "agent_escalations": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of times the agent escalated to the operator (AskUserQuestion, blocked result, incident log). Measures agent uncertainty."
+    },
     "note": {
       "type": "string",
       "description": "Optional context or caveats"
