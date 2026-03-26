@@ -4,14 +4,139 @@ Migrated from .agent/evals/conventions/*.eval.md
 
 SCUE-specific tests are marked with @scue_available and will be skipped
 when the SCUE project directory is absent (e.g., on a clean pipeline-only checkout).
+
+Pipeline-level tests (no project dependency) are at the top of this file.
 """
 
+import json
+import os
 import re
+import stat
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
+
+
+# ── pipeline-level: skill frontmatter ────────────────────────────────────
+# Rule: Every SKILL.md must have YAML frontmatter with name and description.
+
+
+@pytest.mark.convention
+class TestAllSkillsHaveFrontmatter:
+    """Every SKILL.md has YAML frontmatter with name and description."""
+
+    def _find_all_skills(self) -> list[Path]:
+        """Find all SKILL.md files across pipeline and project skills."""
+        skills = []
+        for pattern in ["skills/**/SKILL.md", ".claude/skills/**/SKILL.md"]:
+            skills.extend(ROOT.glob(pattern))
+        return skills
+
+    def test_all_skills_have_frontmatter(self) -> None:
+        """Every SKILL.md starts with --- delimited YAML frontmatter."""
+        skills = self._find_all_skills()
+        assert skills, "No SKILL.md files found"
+        missing = []
+        for skill in skills:
+            text = skill.read_text()
+            if not text.startswith("---"):
+                missing.append(str(skill.relative_to(ROOT)))
+        assert not missing, (
+            f"SKILL.md files missing YAML frontmatter:\n"
+            + "\n".join(f"  - {m}" for m in missing)
+        )
+
+    def test_frontmatter_has_name_and_description(self) -> None:
+        """Frontmatter contains name and description fields."""
+        skills = self._find_all_skills()
+        violations = []
+        for skill in skills:
+            text = skill.read_text()
+            if not text.startswith("---"):
+                continue  # Caught by test above
+            # Extract frontmatter between first two ---
+            parts = text.split("---", 2)
+            if len(parts) < 3:
+                violations.append(f"{skill.relative_to(ROOT)}: malformed frontmatter (no closing ---)")
+                continue
+            fm = parts[1]
+            if "name:" not in fm:
+                violations.append(f"{skill.relative_to(ROOT)}: missing 'name' field")
+            if "description:" not in fm:
+                violations.append(f"{skill.relative_to(ROOT)}: missing 'description' field")
+        assert not violations, (
+            f"SKILL.md frontmatter issues:\n"
+            + "\n".join(f"  - {v}" for v in violations)
+        )
+
+
+# ── pipeline-level: native hooks settings valid ─────────────────────────
+# Rule: settings.json is valid JSON and all referenced hook scripts exist.
+
+
+@pytest.mark.convention
+class TestNativeHooksSettingsValid:
+    """settings.json is well-formed and all hook scripts are present and executable."""
+
+    SETTINGS_PATH = ROOT / ".claude" / "settings.json"
+
+    def test_settings_json_parses(self) -> None:
+        """settings.json is valid JSON."""
+        assert self.SETTINGS_PATH.exists(), ".claude/settings.json not found"
+        text = self.SETTINGS_PATH.read_text()
+        try:
+            json.loads(text)
+        except json.JSONDecodeError as e:
+            pytest.fail(f".claude/settings.json is invalid JSON: {e}")
+
+    def test_all_hook_scripts_exist(self) -> None:
+        """Every script referenced in hook commands exists on disk."""
+        settings = json.loads(self.SETTINGS_PATH.read_text())
+        hooks_config = settings.get("hooks", {})
+        missing = []
+        for event_name, hook_groups in hooks_config.items():
+            for group in hook_groups:
+                for hook in group.get("hooks", []):
+                    cmd = hook.get("command", "")
+                    # Extract script paths from the command string
+                    # Pattern: "$CLAUDE_PROJECT_DIR"/path/to/script
+                    # Replace the env var with the actual root
+                    resolved = cmd.replace('"$CLAUDE_PROJECT_DIR"/', str(ROOT) + "/")
+                    resolved = resolved.replace("$CLAUDE_PROJECT_DIR/", str(ROOT) + "/")
+                    # The command may have multiple parts (e.g., python script.py)
+                    # Check each path-like token
+                    for token in resolved.split():
+                        if token.startswith(str(ROOT)) and not token.startswith(str(ROOT) + "/.venv"):
+                            path = Path(token)
+                            if not path.exists():
+                                missing.append(f"{event_name}: {path.relative_to(ROOT)}")
+        assert not missing, (
+            f"Hook scripts referenced in settings.json but not found:\n"
+            + "\n".join(f"  - {m}" for m in missing)
+        )
+
+    def test_hook_scripts_executable(self) -> None:
+        """Shell hook scripts (.sh) are executable."""
+        settings = json.loads(self.SETTINGS_PATH.read_text())
+        hooks_config = settings.get("hooks", {})
+        not_executable = []
+        for event_name, hook_groups in hooks_config.items():
+            for group in hook_groups:
+                for hook in group.get("hooks", []):
+                    cmd = hook.get("command", "")
+                    resolved = cmd.replace('"$CLAUDE_PROJECT_DIR"/', str(ROOT) + "/")
+                    resolved = resolved.replace("$CLAUDE_PROJECT_DIR/", str(ROOT) + "/")
+                    for token in resolved.split():
+                        if token.endswith(".sh") and token.startswith(str(ROOT)):
+                            path = Path(token)
+                            if path.exists() and not os.access(path, os.X_OK):
+                                not_executable.append(f"{event_name}: {path.relative_to(ROOT)}")
+        assert not not_executable, (
+            f"Hook scripts not executable:\n"
+            + "\n".join(f"  - {m}" for m in not_executable)
+        )
 SCUE_ROOT = ROOT / "projects" / "DjTools" / "scue"
 
 scue_available = pytest.mark.skipif(

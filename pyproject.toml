@@ -9,8 +9,15 @@ evals = [
     "deepeval>=2.0.0",
     "pytest>=8.0",
 ]
+experiments = [
+    "inspect-ai>=0.3",
+    "pyyaml>=6.0",
+]
 observability = [
     "langfuse>=2.0",
+]
+all = [
+    "the-factory[evals,experiments,observability]",
 ]
 
 [tool.pytest.ini_options]

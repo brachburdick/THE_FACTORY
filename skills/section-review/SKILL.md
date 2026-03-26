@@ -1,7 +1,12 @@
-# Skill: Section Review
+---
+name: section-review
+description: >
+  Review, audit, or improve a project that has defined sections with boundary
+  contracts. Three-pass model: section internals, boundary seams, integration.
+  Triggered by: "review", "audit", "quality check", "section review".
+---
 
-> **When to use:** Reviewing, auditing, or improving a project that has defined sections
-> with boundary contracts. Triggered by: "review", "audit", "quality check", "section review".
+# Skill: Section Review
 
 ## Prerequisites
 

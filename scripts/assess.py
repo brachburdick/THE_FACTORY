@@ -61,7 +61,7 @@ def get_langfuse_sessions(count: int) -> list[dict[str, Any]] | None:
     """Pull recent sessions from Langfuse if configured."""
     public_key = os.environ.get("LANGFUSE_PUBLIC_KEY")
     secret_key = os.environ.get("LANGFUSE_SECRET_KEY")
-    host = os.environ.get("LANGFUSE_HOST", "https://cloud.langfuse.com")
+    host = os.environ.get("LANGFUSE_BASE_URL") or os.environ.get("LANGFUSE_HOST", "https://cloud.langfuse.com")
 
     if not public_key or not secret_key:
         return None
