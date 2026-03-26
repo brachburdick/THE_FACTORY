@@ -108,6 +108,21 @@ def list_tasks() -> None:
         if '"""' in text:
             doc = text.split('"""')[1].strip().split("\n")[0]
         print(f"  {f.name:<35} {doc}")
+
+    # Also list standalone tasks (no project repo dependency)
+    standalone_dir = tasks_dir / "standalone"
+    if standalone_dir.exists():
+        standalone_tasks = sorted(standalone_dir.glob("*.py"))
+        standalone_tasks = [f for f in standalone_tasks if not f.name.startswith("_")]
+        if standalone_tasks:
+            print("\n=== Standalone Tasks (no project dependency) ===\n")
+            for f in standalone_tasks:
+                text = f.read_text()
+                doc = ""
+                if '"""' in text:
+                    doc = text.split('"""')[1].strip().split("\n")[0]
+                print(f"  standalone/{f.name:<25} {doc}")
+
     print()
 
 
