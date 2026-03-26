@@ -21,6 +21,11 @@
         "hooks": [
           {
             "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/risk-classifier.sh",
+            "timeout": 5
+          },
+          {
+            "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/fix-attempt-tracker.sh",
             "timeout": 5
           },
@@ -34,6 +39,11 @@
       {
         "matcher": "Write",
         "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/risk-classifier.sh",
+            "timeout": 5
+          },
           {
             "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/fix-attempt-tracker.sh",

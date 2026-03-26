@@ -279,6 +279,82 @@ class TestFixAttemptTrackerHook:
         assert result.returncode == 0, f"Normal workflow blocked: {result.stderr}"
 
 
+# ── risk-classifier hook tests ────────────────────────────────────────────
+# Direct tests of risk-classifier.sh behavior.
+
+
+@pytest.mark.flow
+class TestRiskClassifierHook:
+    """risk-classifier.sh reads task risk and enforces high-risk plan requirement."""
+
+    HOOK = ROOT / ".claude" / "hooks" / "risk-classifier.sh"
+
+    def _run_hook(self, tool_name: str, file_path: str = "", tasks_content: str = "") -> subprocess.CompletedProcess[str]:
+        """Run the hook with simulated tool input and a temp tasks file."""
+        payload = {"tool_name": tool_name, "tool_input": {}}
+        if file_path:
+            payload["tool_input"]["file_path"] = file_path
+
+        env = dict(__import__("os").environ)
+        if tasks_content:
+            tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False)
+            tmp.write(tasks_content)
+            tmp.close()
+            # Override CLAUDE_PROJECT_DIR to use a temp dir with .agent/tasks.jsonl
+            tmpdir = tempfile.mkdtemp()
+            import os, shutil
+            os.makedirs(os.path.join(tmpdir, ".agent"), exist_ok=True)
+            os.makedirs(os.path.join(tmpdir, ".claude", "plans"), exist_ok=True)
+            shutil.copy(tmp.name, os.path.join(tmpdir, ".agent", "tasks.jsonl"))
+            env["CLAUDE_PROJECT_DIR"] = tmpdir
+
+        return subprocess.run(
+            ["bash", str(self.HOOK)],
+            input=json.dumps(payload),
+            capture_output=True,
+            text=True,
+            timeout=5,
+            env=env,
+            cwd=env.get("CLAUDE_PROJECT_DIR", str(ROOT)),
+        )
+
+    def test_allows_non_source_files(self) -> None:
+        """Edits to docs/config are always allowed regardless of risk."""
+        result = self._run_hook("Edit", file_path="/project/README.md")
+        assert result.returncode == 0
+
+    def test_allows_test_files(self) -> None:
+        """Edits to test files are always allowed regardless of risk."""
+        result = self._run_hook("Edit", file_path="/project/tests/test_foo.py")
+        assert result.returncode == 0
+
+    def test_allows_medium_risk_source_edits(self) -> None:
+        """Medium-risk tasks allow source edits (plan-gate handles enforcement)."""
+        tasks = '{"id":"test-001","taskType":"feature","status":"in_progress","summary":"Add new widget","risk":"medium"}\n'
+        result = self._run_hook("Edit", file_path="/project/src/main.py", tasks_content=tasks)
+        assert result.returncode == 0
+
+    def test_allows_low_risk_source_edits(self) -> None:
+        """Low-risk tasks always allow source edits."""
+        tasks = '{"id":"test-002","taskType":"refactor","status":"in_progress","summary":"Fix lint issues","risk":"low"}\n'
+        result = self._run_hook("Edit", file_path="/project/src/main.py", tasks_content=tasks)
+        assert result.returncode == 0
+
+    def test_blocks_high_risk_without_plan(self) -> None:
+        """High-risk tasks block source edits when no plan exists."""
+        tasks = '{"id":"test-003","taskType":"feature","status":"in_progress","summary":"Database migration","risk":"high"}\n'
+        result = self._run_hook("Edit", file_path="/project/src/main.py", tasks_content=tasks)
+        assert result.returncode == 2, f"Expected block (exit 2), got {result.returncode}"
+        assert "BLOCKED" in result.stderr
+        assert "High-risk" in result.stderr
+
+    def test_infers_high_risk_from_keywords(self) -> None:
+        """Tasks with security/migration keywords are inferred as high-risk."""
+        tasks = '{"id":"test-004","taskType":"feature","status":"in_progress","summary":"Implement auth credentials migration"}\n'
+        result = self._run_hook("Edit", file_path="/project/src/main.py", tasks_content=tasks)
+        assert result.returncode == 2, f"Expected block (exit 2) for inferred high-risk, got {result.returncode}"
+
+
 # ── skill-triggers-correctly ─────────────────────────────────────────────
 # Source: .agent/evals/skills/skill-triggers-correctly.eval.md
 
