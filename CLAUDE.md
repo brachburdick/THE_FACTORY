@@ -51,6 +51,37 @@ THE_FACTORY operates at three speeds with different gate strictness:
 
 New enforcement mechanisms belong in the loop matching their speed. Inner-loop gates must be fast and deterministic. Middle-loop gates can require operator input. Outer-loop mechanisms are observational — they feed future threshold changes, not real-time blocks.
 
+## Oversight Policy
+
+Risk-tiered oversight replaces blanket human gates with selective ones.
+The oversight level for any action is determined by **three dimensions:**
+
+| Dimension | Low | Medium | High |
+|---|---|---|---|
+| **Risk** | Tests, docs, config, lint | Most features, bug fixes | Security, migrations, auth, cross-section |
+| **Evidence** | Tests pass, pattern is known | Tests exist, first attempt | No tests, novel pattern, prior failures |
+| **Ambiguity** | Clear spec, explicit criteria | Some open questions | Vague goals, no acceptance criteria |
+
+**Oversight matrix** — the *highest* dimension wins:
+
+| Combination | Oversight Level | What Happens |
+|---|---|---|
+| All low | **Autonomous** | Proceed without checkpoints. Post-hoc review via run record. |
+| Any medium, none high | **Checkpoint** | Proceed, but pause at phase gates for operator confirmation. |
+| Any high | **Supervised** | Require approved plan before source mutations. Log incidents on deviation. |
+
+**Escalation triggers** (move oversight UP regardless of risk):
+- 2+ fix attempts exhausted → escalate to supervised
+- Files outside owned_paths → escalate to supervised
+- Ambiguous acceptance criteria → escalate to checkpoint minimum
+- Prior incident on same component → escalate one level
+
+**De-escalation** (move oversight DOWN with evidence):
+- Approved plan exists → high-risk can proceed as checkpoint
+- 3+ consecutive successful sessions on same component → eligible for autonomous
+
+See `docs/oversight-matrix.md` for the full reference with examples.
+
 ## What Hooks Enforce (don't duplicate in prose)
 - Git guard: no commits to main, no force-push, no reset --hard (fail-closed, no jq dependency)
 - Fix-attempt tracker: blocks after 2 source mutations (Edit/Write) without running tests; resets on test run. Compound budget tracks total mutations per phase (low=15, medium=7, high=4); resets on `budget-reset`
