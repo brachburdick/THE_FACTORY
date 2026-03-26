@@ -158,18 +158,34 @@ class TestSubagentGuidance:
 
 
 @pytest.mark.mining
-class TestPreImplementationChecklist:
-    """Feature flow includes pre-implementation checklist."""
+class TestPreFlightReadinessCheck:
+    """Flow skills include pre-flight readiness checks (tf-027)."""
 
-    def test_feature_flow_has_checklist(self) -> None:
-        """feature-flow SKILL.md includes Phase 2.5 pre-implementation checklist."""
+    def test_feature_flow_has_preflight(self) -> None:
+        """feature-flow SKILL.md includes pre-flight readiness check."""
         skill_path = ROOT / ".claude" / "skills" / "feature-flow" / "SKILL.md"
         text = skill_path.read_text()
-        assert "Pre-Implementation" in text, (
-            "feature-flow missing Phase 2.5 Pre-Implementation Checklist"
+        assert "Pre-Flight" in text, (
+            "feature-flow missing Pre-Flight Readiness Check"
         )
+        # Must check for prior work (original mining finding)
         assert "already" in text.lower() and "exist" in text.lower(), (
-            "Pre-implementation checklist doesn't check for already-existing work"
+            "Pre-flight checklist doesn't check for already-existing work"
+        )
+        # Must check risk level (tf-027 requirement)
+        assert "risk" in text.lower(), (
+            "Pre-flight checklist doesn't verify risk level is set"
+        )
+
+    def test_refactor_flow_has_preflight(self) -> None:
+        """refactor-flow SKILL.md includes pre-flight readiness check."""
+        skill_path = ROOT / ".claude" / "skills" / "refactor-flow" / "SKILL.md"
+        text = skill_path.read_text()
+        assert "Pre-Flight" in text, (
+            "refactor-flow missing Pre-Flight Readiness Check"
+        )
+        assert "risk" in text.lower(), (
+            "Pre-flight checklist doesn't verify risk level is set"
         )
 
 

@@ -21,6 +21,28 @@ description: >
 
 **Gate:** Scope boundary is defined. Preservation criteria are stated.
 
+## Phase 1.5: Pre-Flight Readiness Check
+**Goal:** Verify the task and environment are ready before any code changes. Catches missing
+context that causes scope creep and wasted fix-attempts.
+
+**Checklist — all must pass before entering Phase 2:**
+1. **Acceptance criteria exist:** The task has explicit preservation criteria (what behavior
+   must NOT change) and structural goals (what the code should look like after). If missing,
+   ask the operator — do NOT invent criteria.
+2. **Section assignment:** If the project uses sections (`sections/SECTIONS.md`), the refactor's
+   affected files map to a known section. If files span multiple sections, flag this to the
+   operator as a cross-boundary refactor.
+3. **Risk level set:** The task has a `risk` field in `.agent/tasks.jsonl` (low/medium/high).
+   If missing, classify it now using the risk-classifier heuristics (tf-024).
+4. **Baseline tests pass:** Run the test suite for the affected area. Record the results as
+   the behavioral snapshot baseline. If tests are already failing, record pre-existing
+   failures before proceeding.
+5. **No conflicting in-progress tasks:** Check `.agent/tasks.jsonl` for other `in_progress`
+   tasks touching the same files or section. If a conflict exists, coordinate with the
+   operator or wait.
+
+**Gate:** All 5 checks pass. If any fail, resolve before entering Phase 2.
+
 ## Phase 2: Snapshot
 **Goal:** Establish a behavioral baseline before any changes.
 **Steps:**

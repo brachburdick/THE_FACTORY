@@ -57,15 +57,29 @@ Human confirmation required before proceeding.
 
 **Gate:** Implementation plan exists with ordered steps and file list.
 
-## Phase 2.5: Pre-Implementation Checklist
-**Goal:** Avoid re-implementing work that already exists.
-**Steps:**
-1. For each file in the plan's scope, check: does it already contain the expected changes?
-2. If code already exists for a planned step, mark that step as done and verify it works.
-3. Check `.agent/state-snapshot.json` — a prior session may have partially completed this work.
+## Phase 2.5: Pre-Flight Readiness Check
+**Goal:** Verify the task and environment are ready before writing any code. Catches missing
+context that causes mid-build reversals, scope creep, and wasted fix-attempts.
 
-This phase was added because conversation mining found agents spending ~40% of context
-re-reading code only to discover tasks were already implemented.
+**Checklist — all must pass before entering Phase 3:**
+1. **Acceptance criteria exist:** The task (in `.agent/tasks.jsonl` or the spec) has testable
+   acceptance criteria. If missing, ask the operator — do NOT invent criteria.
+2. **Section assignment:** If the project uses sections (`sections/SECTIONS.md`), the task's
+   affected files map to a known section. If files span multiple sections, flag this to the
+   operator as a cross-boundary change.
+3. **Risk level set:** The task has a `risk` field in `.agent/tasks.jsonl` (low/medium/high).
+   If missing, classify it now using the risk-classifier heuristics (tf-024).
+4. **Baseline tests pass:** Run the test suite for the affected area. If tests are already
+   failing, record the pre-existing failures before proceeding — do NOT let them become
+   your regressions.
+5. **No conflicting in-progress tasks:** Check `.agent/tasks.jsonl` for other `in_progress`
+   tasks touching the same files or section. If a conflict exists, coordinate with the
+   operator or wait.
+6. **Prior work check:** For each file in the plan's scope, check: does it already contain
+   the expected changes? Check `.agent/state-snapshot.json` — a prior session may have
+   partially completed this work.
+
+**Gate:** All 6 checks pass. If any fail, resolve before entering Phase 3.
 
 ## Phase 3: Implement
 **Goal:** Build the feature according to the plan.
