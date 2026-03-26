@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Run Record",
+  "description": "A single run record in .agent/runs.jsonl",
+  "type": "object",
+  "required": ["run_id", "date", "project_id", "task_id", "task_type", "result", "summary"],
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "description": "Unique run identifier (e.g., run-tf042-001)"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "ISO 8601 date (YYYY-MM-DD)"
+    },
+    "project_id": {
+      "type": "string",
+      "description": "Project this run was performed against"
+    },
+    "task_id": {
+      "type": "string",
+      "description": "Task ID from tasks.jsonl"
+    },
+    "task_type": {
+      "type": "string",
+      "enum": ["feature", "bug", "refactor", "investigation", "documentation"],
+      "description": "Category of work"
+    },
+    "result": {
+      "type": "string",
+      "enum": ["success", "partial", "failed", "blocked"],
+      "description": "Outcome of the run"
+    },
+    "summary": {
+      "type": "string",
+      "description": "Human-readable summary of what was accomplished"
+    },
+    "files_touched": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Files modified during this run"
+    },
+    "evals_passed": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of evals that passed"
+    },
+    "evals_failed": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of evals that failed"
+    },
+    "evals_skipped": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of evals skipped"
+    },
+    "backfilled": {
+      "type": "boolean",
+      "description": "Whether this record was retroactively created"
+    },
+    "note": {
+      "type": "string",
+      "description": "Optional context or caveats"
+    }
+  },
+  "additionalProperties": true
+}

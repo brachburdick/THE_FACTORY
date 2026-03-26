@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Incident Record",
+  "description": "A single incident in .agent/incidents.jsonl",
+  "type": "object",
+  "required": ["incident_id", "date", "task_id", "severity", "summary"],
+  "properties": {
+    "incident_id": {
+      "type": "string",
+      "description": "Unique incident identifier"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "ISO 8601 date (YYYY-MM-DD)"
+    },
+    "task_id": {
+      "type": "string",
+      "description": "Related task ID"
+    },
+    "run_id": {
+      "type": "string",
+      "description": "Related run ID, if applicable"
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"],
+      "description": "Impact severity"
+    },
+    "category": {
+      "type": "string",
+      "enum": ["hook_failure", "test_regression", "scope_creep", "data_loss", "performance", "blocked", "flaky_test", "other"],
+      "description": "Incident category"
+    },
+    "summary": {
+      "type": "string",
+      "description": "What happened"
+    },
+    "root_cause": {
+      "type": "string",
+      "description": "Why it happened"
+    },
+    "resolution": {
+      "type": "string",
+      "description": "How it was resolved"
+    },
+    "eval_case_filed": {
+      "type": "boolean",
+      "description": "Whether a regression eval was created"
+    }
+  },
+  "additionalProperties": true
+}

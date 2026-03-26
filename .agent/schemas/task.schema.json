@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Task Entry",
+  "description": "A single task in .agent/tasks.jsonl",
+  "type": "object",
+  "required": ["id", "taskType", "status", "summary"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique task identifier (e.g., tf-042, scue-m7)"
+    },
+    "taskType": {
+      "type": "string",
+      "enum": ["feature", "bug", "refactor", "investigation", "documentation"],
+      "description": "Category of work"
+    },
+    "flowPhase": {
+      "type": ["string", "null"],
+      "enum": ["intent", "spec", "plan", "implement", "test", "verify", null],
+      "description": "Current phase in the flow skill lifecycle"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["pending", "in_progress", "blocked", "complete"],
+      "description": "Current task status"
+    },
+    "summary": {
+      "type": "string",
+      "description": "Human-readable description of the task and its outcome"
+    },
+    "blockers": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "List of task IDs or labels that block this task"
+    },
+    "plan_checkpoints": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Flow phases that require operator approval"
+    },
+    "updated": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of last status change"
+    },
+    "batch": {
+      "type": "string",
+      "description": "Improvement batch grouping (e.g., v22-batch1)"
+    }
+  },
+  "additionalProperties": true
+}

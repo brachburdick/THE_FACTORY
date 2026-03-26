@@ -271,3 +271,98 @@ class TestTaskClosureCompleteness:
             f"Run records missing summary:\n"
             + "\n".join(f"  - {rid}" for rid in missing)
         )
+
+
+# ── JSONL schema validation (tf-043) ─────────────────────────────────────
+# Rule: Every entry in tasks/runs/incidents JSONL validates against its schema.
+
+
+@pytest.mark.handoff
+class TestJsonlSchemaValidation:
+    """JSONL entries validate against their JSON schemas."""
+
+    SCHEMAS_DIR = AGENT_DIR / "schemas"
+
+    def _load_schema(self, name: str) -> dict[str, Any] | None:
+        path = self.SCHEMAS_DIR / name
+        if not path.exists():
+            return None
+        return json.loads(path.read_text())
+
+    def _load_jsonl(self, name: str) -> list[tuple[int, dict[str, Any]]]:
+        path = AGENT_DIR / name
+        if not path.exists():
+            return []
+        entries = []
+        for i, line in enumerate(path.read_text().splitlines()):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                entries.append((i + 1, json.loads(line)))
+            except json.JSONDecodeError:
+                pass  # Caught by existing test_tasks_jsonl_exists
+        return entries
+
+    def _validate_required_fields(self, entries: list[tuple[int, dict]], schema: dict, file_name: str) -> None:
+        required = schema.get("required", [])
+        violations = []
+        for line_num, entry in entries:
+            missing = [f for f in required if f not in entry]
+            if missing:
+                entry_id = entry.get("id") or entry.get("run_id") or entry.get("incident_id") or f"line-{line_num}"
+                violations.append(f"{file_name}:{line_num} ({entry_id}): missing {missing}")
+        assert not violations, (
+            f"JSONL entries missing required fields:\n"
+            + "\n".join(f"  - {v}" for v in violations[:10])
+        )
+
+    def _validate_enum_fields(self, entries: list[tuple[int, dict]], schema: dict, file_name: str) -> None:
+        props = schema.get("properties", {})
+        violations = []
+        for line_num, entry in entries:
+            for field, field_schema in props.items():
+                if field not in entry:
+                    continue
+                # Handle nullable enums (type is array with string and null)
+                allowed = field_schema.get("enum")
+                if not allowed:
+                    continue
+                if entry[field] not in allowed:
+                    entry_id = entry.get("id") or entry.get("run_id") or entry.get("incident_id") or f"line-{line_num}"
+                    violations.append(f"{file_name}:{line_num} ({entry_id}): {field}='{entry[field]}' not in {allowed}")
+        assert not violations, (
+            f"JSONL entries with invalid enum values:\n"
+            + "\n".join(f"  - {v}" for v in violations[:10])
+        )
+
+    def test_tasks_match_schema(self) -> None:
+        """Every task entry has required fields and valid enum values."""
+        schema = self._load_schema("task.schema.json")
+        if not schema:
+            pytest.skip("task.schema.json not found")
+        entries = self._load_jsonl("tasks.jsonl")
+        if not entries:
+            pytest.skip("No task entries")
+        self._validate_required_fields(entries, schema, "tasks.jsonl")
+        self._validate_enum_fields(entries, schema, "tasks.jsonl")
+
+    def test_runs_match_schema(self) -> None:
+        """Every run record has required fields and valid enum values."""
+        schema = self._load_schema("run.schema.json")
+        if not schema:
+            pytest.skip("run.schema.json not found")
+        entries = self._load_jsonl("runs.jsonl")
+        if not entries:
+            pytest.skip("No run entries")
+        self._validate_required_fields(entries, schema, "runs.jsonl")
+        self._validate_enum_fields(entries, schema, "runs.jsonl")
+
+    def test_incidents_match_schema(self) -> None:
+        """Every incident entry has required fields and valid enum values."""
+        schema = self._load_schema("incident.schema.json")
+        if not schema:
+            pytest.skip("incident.schema.json not found")
+        entries = self._load_jsonl("incidents.jsonl")
+        if not entries:
+            pytest.skip("No incident entries")

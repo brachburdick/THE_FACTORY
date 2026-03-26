@@ -117,6 +117,21 @@ class TestNativeHooksSettingsValid:
             + "\n".join(f"  - {m}" for m in missing)
         )
 
+    def test_hook_events_are_valid(self) -> None:
+        """Hook event names are recognized Claude Code lifecycle events."""
+        valid_events = {
+            "PreToolUse", "PostToolUse", "PostToolUseFailure", "Notification",
+            "UserPromptSubmit", "SessionStart", "SessionEnd", "Stop",
+            "StopFailure", "SubagentStart", "SubagentStop", "PreCompact",
+            "PostCompact", "PermissionRequest", "Setup", "TeammateIdle",
+            "TaskCompleted", "Elicitation", "ElicitationResult", "ConfigChange",
+            "WorktreeCreate", "WorktreeRemove", "InstructionsLoaded",
+        }
+        settings = json.loads(self.SETTINGS_PATH.read_text())
+        hooks_config = settings.get("hooks", {})
+        invalid = [e for e in hooks_config if e not in valid_events]
+        assert not invalid, f"Unknown hook events in settings.json: {invalid}"
+
     def test_hook_scripts_executable(self) -> None:
         """Shell hook scripts (.sh) are executable."""
         settings = json.loads(self.SETTINGS_PATH.read_text())

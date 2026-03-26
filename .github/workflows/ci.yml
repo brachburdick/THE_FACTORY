@@ -1,0 +1,46 @@
+name: CI — Eval Suite
+
+on:
+  push:
+    branches: [main, "v*"]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  evals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Create venv and install deps
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install -e ".[evals]"
+
+      - name: Validate settings.json
+        run: python -m json.tool .claude/settings.json > /dev/null
+
+      - name: Shellcheck hook scripts
+        run: |
+          sudo apt-get install -y shellcheck
+          shellcheck .claude/hooks/*.sh || true
+
+      - name: Run eval suite
+        run: .venv/bin/python -m pytest evals/ -v --tb=short
+
+      - name: Upload eval results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results
+          path: .agent/reports/
+          retention-days: 30

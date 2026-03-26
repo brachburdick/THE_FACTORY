@@ -249,7 +249,7 @@ def generate_improvements(report: dict[str, Any]) -> list[dict[str, Any]]:
     return candidates
 
 
-def assess(count: int) -> None:
+def assess(count: int, out_path: str | None = None) -> None:
     """Main assessment flow."""
     print(f"\n=== Assessing Last {count} Sessions ===\n")
 
@@ -298,6 +298,14 @@ def assess(count: int) -> None:
     else:
         print(f"\n  No improvement candidates generated. Metrics look good.")
 
+    # Structured output
+    if out_path:
+        report["candidates"] = candidates
+        out = Path(out_path)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(report, indent=2) + "\n")
+        print(f"\n  Report written to {out_path}")
+
     print()
 
 
@@ -325,6 +333,7 @@ def main() -> None:
     parser.add_argument("--last", type=int, help="Assess last N sessions")
     parser.add_argument("--baseline", action="store_true", help="Show Phase 0 baselines")
     parser.add_argument("--improvements", action="store_true", help="Show pending improvements")
+    parser.add_argument("--out", type=str, help="Write JSON report to this path (for CI artifacts)")
 
     args = parser.parse_args()
 
@@ -333,7 +342,7 @@ def main() -> None:
     elif args.improvements:
         show_improvements()
     elif args.last:
-        assess(args.last)
+        assess(args.last, out_path=args.out)
     else:
         parser.print_help()
 

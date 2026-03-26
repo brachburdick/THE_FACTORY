@@ -1,0 +1,43 @@
+name: Nightly Assessment
+
+on:
+  schedule:
+    - cron: "37 8 * * *"  # 8:37 AM UTC daily (off-minute to reduce fleet contention)
+  workflow_dispatch:
+    inputs:
+      session_count:
+        description: "Number of sessions to assess"
+        default: "20"
+
+jobs:
+  assess:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      LANGFUSE_BASE_URL: ${{ secrets.LANGFUSE_BASE_URL }}
+      LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
+      LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Create venv and install deps
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install -e ".[evals,observability]"
+
+      - name: Run assessment
+        run: |
+          COUNT=${{ github.event.inputs.session_count || '20' }}
+          .venv/bin/python scripts/assess.py --last "$COUNT" --out .agent/reports/assess-report.json
+
+      - name: Upload assessment artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: assess-${{ github.run_number }}
+          path: .agent/reports/assess-report.*
+          retention-days: 90

@@ -1,0 +1,42 @@
+name: Experiment Runner
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "Task path (e.g., tasks/fix-short-track-bpm.py)"
+        required: true
+      variants:
+        description: "Space-separated variant paths (e.g., variants/baseline.yaml variants/minimal.yaml)"
+        required: true
+
+jobs:
+  experiment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Create venv and install deps
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install -e ".[experiments,evals]"
+
+      - name: Run experiment
+        run: |
+          .venv/bin/python scripts/experiment.py \
+            --task ${{ github.event.inputs.task }} \
+            --variants ${{ github.event.inputs.variants }} \
+            --out .agent/reports/experiment-report.json
+
+      - name: Upload experiment results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: experiment-${{ github.run_number }}
+          path: .agent/reports/experiment-report.*
+          retention-days: 30
