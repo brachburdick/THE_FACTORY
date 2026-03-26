@@ -79,3 +79,38 @@ dispatch_status: [FILL: READY | READY WITH EXPLICIT ASSUMPTIONS | NOT READY]
 <!-- Assumptions accepted for this dispatch. If any are invalidated during execution, trigger replan. -->
 - [FILL: assumption — confidence: [HIGH | MEDIUM | LOW], invalidation signal: [what would prove this wrong]]
 - [FILL: or "None — all inputs are confirmed"]
+
+---
+
+# Abstain Packet Template
+
+> Use this format when escalating to the operator via AskUserQuestion. Structured
+> escalation prevents vague "I'm stuck" messages and gives the operator enough
+> context to unblock quickly.
+
+## blocked_because
+[FILL: One sentence — what specific condition prevents progress.]
+
+Example: "The spec requires OAuth2 PKCE flow but the auth library (v2.1) doesn't
+support PKCE. Upgrading to v3.0 would be a breaking change across 4 consumers."
+
+## missing_evidence
+[FILL: What information or decision is needed to proceed.]
+
+Example: "Need operator decision: (a) upgrade auth library to v3.0 and accept
+breaking changes, (b) implement PKCE manually using the existing library, or
+(c) drop the PKCE requirement and use standard OAuth2."
+
+## recommended_safe_default
+[FILL: What the agent would do if forced to continue without operator input.
+Must be the most conservative option that doesn't make irreversible changes.]
+
+Example: "If no response: skip PKCE implementation, document it as a known gap
+in the spec's Change Log, and continue with standard OAuth2 flow."
+
+## reply_with
+[FILL: What format or content the operator's reply should take. Be specific
+about what constitutes a sufficient answer.]
+
+Example: "Reply with one of: (a), (b), or (c) from missing_evidence above.
+If choosing (a), confirm that breaking change to auth consumers is acceptable."
