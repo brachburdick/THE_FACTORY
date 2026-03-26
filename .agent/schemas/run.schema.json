@@ -56,6 +56,11 @@
       "minimum": 0,
       "description": "Number of evals skipped"
     },
+    "eval_failures": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "List of eval test names that failed (e.g., 'test_mining.py::TestZeroKnownFailures::test_scue_tests_all_pass'). Used for flakiness analysis across runs."
+    },
     "backfilled": {
       "type": "boolean",
       "description": "Whether this record was retroactively created"

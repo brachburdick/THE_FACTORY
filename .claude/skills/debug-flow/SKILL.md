@@ -54,6 +54,13 @@ description: >
 
 **Gate:** Reproduction test passes. No new test failures.
 
+### Flakiness handling
+If a test fails intermittently (passes on rerun without code changes), **rerun once**
+before consuming a fix-attempt. If it passes on rerun, note the test name for flakiness
+tracking. When closing the task, include the test name in `eval_failures` in the run
+record so assess.py can track flakiness rates across runs. Tests with >10% fail rate
+across 20+ runs are flagged as flaky candidates by `analyze_flakiness()` in assess.py.
+
 ## Phase 5: Verify & Close
 **Steps:**
 1. **Separate-context verification:** Before closing, run a verification step in a

@@ -309,6 +309,55 @@ def compute_slos(count: int = 20) -> dict[str, Any]:
     return slos
 
 
+def analyze_flakiness(count: int = 20) -> dict[str, Any]:
+    """Analyze eval flakiness across recent runs.
+
+    A test is considered flaky if it fails in >10% of runs where it was
+    reported, without corresponding code changes to its tested area.
+
+    Returns dict with test_name → {fail_count, total_runs, fail_rate, flaky}.
+    """
+    runs_file = AGENT_DIR / "runs.jsonl"
+    if not runs_file.exists():
+        return {}
+
+    runs = []
+    for line in runs_file.read_text().splitlines():
+        line = line.strip()
+        if line:
+            try:
+                runs.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+
+    runs = runs[-count:]
+
+    # Count failures per test name across runs
+    test_failures: dict[str, int] = {}
+    runs_with_eval_data = 0
+    for r in runs:
+        failures = r.get("eval_failures", [])
+        if failures is not None:
+            runs_with_eval_data += 1
+            for test_name in failures:
+                test_failures[test_name] = test_failures.get(test_name, 0) + 1
+
+    if not runs_with_eval_data:
+        return {}
+
+    results = {}
+    for test_name, fail_count in test_failures.items():
+        fail_rate = round(fail_count / runs_with_eval_data * 100, 1)
+        results[test_name] = {
+            "fail_count": fail_count,
+            "total_runs": runs_with_eval_data,
+            "fail_rate": fail_rate,
+            "flaky": fail_rate > 10.0 and fail_rate < 90.0,  # >90% is genuinely broken, not flaky
+        }
+
+    return results
+
+
 def generate_improvements(report: dict[str, Any]) -> list[dict[str, Any]]:
     """Generate improvement candidates from assessment report."""
     candidates = []
@@ -380,6 +429,17 @@ def assess(count: int, out_path: str | None = None) -> None:
             target_str = f"target: {'≤' if name in ('rework_rate', 'escalation_rate', 'test_gate_failure_rate') else '≥'}{slo['target']}{slo['unit']}" if slo.get('target') is not None else "measuring"
             status = "✓" if slo["status"] == "met" else ("📊" if slo["status"] == "measuring" else "✗")
             print(f"  {status} {name}: {slo['value']}{slo['unit']} ({target_str})")
+
+    # Eval flakiness analysis
+    flaky_tests = analyze_flakiness(count)
+    if flaky_tests:
+        report["flakiness"] = flaky_tests
+        flaky_names = [name for name, info in flaky_tests.items() if info["flaky"]]
+        if flaky_names:
+            print(f"\n--- Flaky Tests (>10% fail rate) ---")
+            for name in flaky_names:
+                info = flaky_tests[name]
+                print(f"  ⚠ {name}: {info['fail_rate']}% ({info['fail_count']}/{info['total_runs']} runs)")
 
     # Generate improvements
     candidates = generate_improvements(report)
