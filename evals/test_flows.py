@@ -206,8 +206,18 @@ class TestFixAttemptTrackerHook:
         )
 
     def _reset_state(self) -> None:
-        """Reset the state file to 0."""
-        self.STATE_FILE.write_text("0\n")
+        """Reset the state file to 0/0 (fix-count / total-budget)."""
+        self.STATE_FILE.write_text("0\n0\n")
+
+    def _read_fix_count(self) -> int:
+        """Read line 1: mutations since last test."""
+        lines = self.STATE_FILE.read_text().strip().split("\n")
+        return int(lines[0]) if lines else 0
+
+    def _read_total_count(self) -> int:
+        """Read line 2: total mutations this phase (compound budget)."""
+        lines = self.STATE_FILE.read_text().strip().split("\n")
+        return int(lines[1]) if len(lines) > 1 else 0
 
     def setup_method(self) -> None:
         """Reset state before each test."""
@@ -222,8 +232,7 @@ class TestFixAttemptTrackerHook:
         self._run_hook("Edit", file_path="/project/tests/test_foo.py")
         self._run_hook("Edit", file_path="/project/evals/test_bar.py")
         self._run_hook("Write", file_path="/project/src/foo.spec.ts")
-        count = int(self.STATE_FILE.read_text().strip())
-        assert count == 0, f"Test file edits incremented counter to {count}"
+        assert self._read_fix_count() == 0, "Test file edits incremented counter"
 
     def test_ignores_docs_and_config(self) -> None:
         """Edits to docs, config, and non-source files don't increment."""
@@ -231,37 +240,38 @@ class TestFixAttemptTrackerHook:
         self._run_hook("Edit", file_path="/project/config.json")
         self._run_hook("Write", file_path="/project/pyproject.toml")
         self._run_hook("Edit", file_path="/project/.claude/settings.yaml")
-        count = int(self.STATE_FILE.read_text().strip())
-        assert count == 0, f"Doc/config edits incremented counter to {count}"
+        assert self._read_fix_count() == 0, "Doc/config edits incremented counter"
 
     def test_counts_source_edits(self) -> None:
-        """Edits to source files increment the counter."""
+        """Edits to source files increment both counters."""
         self._run_hook("Edit", file_path="/project/src/main.py")
-        count = int(self.STATE_FILE.read_text().strip())
-        assert count == 1
+        assert self._read_fix_count() == 1
+        assert self._read_total_count() == 1
 
     def test_counts_source_writes(self) -> None:
-        """Write tool on source files also increments the counter."""
+        """Write tool on source files also increments both counters."""
         self._run_hook("Write", file_path="/project/src/main.py")
-        count = int(self.STATE_FILE.read_text().strip())
-        assert count == 1
+        assert self._read_fix_count() == 1
+        assert self._read_total_count() == 1
 
-    def test_resets_on_pytest(self) -> None:
-        """Running pytest resets the counter to 0."""
+    def test_resets_fix_count_on_pytest(self) -> None:
+        """Running pytest resets fix-attempt counter but NOT total budget."""
         self._run_hook("Edit", file_path="/project/src/main.py")
         self._run_hook("Edit", file_path="/project/src/utils.py")
-        assert int(self.STATE_FILE.read_text().strip()) == 2
+        assert self._read_fix_count() == 2
+        assert self._read_total_count() == 2
         self._run_hook("Bash", command=".venv/bin/python -m pytest tests/ -v")
-        assert int(self.STATE_FILE.read_text().strip()) == 0
+        assert self._read_fix_count() == 0, "Fix count should reset on test run"
+        assert self._read_total_count() == 2, "Total budget should NOT reset on test run"
 
     def test_resets_on_npm_test(self) -> None:
-        """Running npm test resets the counter to 0."""
+        """Running npm test resets fix-attempt counter."""
         self._run_hook("Edit", file_path="/project/src/app.tsx")
-        assert int(self.STATE_FILE.read_text().strip()) == 1
+        assert self._read_fix_count() == 1
         self._run_hook("Bash", command="npm test")
-        assert int(self.STATE_FILE.read_text().strip()) == 0
+        assert self._read_fix_count() == 0
 
-    def test_blocks_after_threshold(self) -> None:
+    def test_blocks_after_fix_threshold(self) -> None:
         """Third source mutation without tests is blocked (exit 2)."""
         self._run_hook("Edit", file_path="/project/src/a.py")
         self._run_hook("Edit", file_path="/project/src/b.py")
@@ -270,13 +280,40 @@ class TestFixAttemptTrackerHook:
         assert "BLOCKED" in result.stderr
 
     def test_normal_workflow_not_blocked(self) -> None:
-        """Edit-edit-test-edit-edit cycle should never block."""
+        """Edit-edit-test-edit-edit cycle should never block fix-attempt cap."""
         self._run_hook("Edit", file_path="/project/src/a.py")
         self._run_hook("Edit", file_path="/project/src/b.py")
         self._run_hook("Bash", command="pytest tests/")
         self._run_hook("Edit", file_path="/project/src/c.py")
         result = self._run_hook("Edit", file_path="/project/src/d.py")
         assert result.returncode == 0, f"Normal workflow blocked: {result.stderr}"
+
+    def test_budget_accumulates_across_test_resets(self) -> None:
+        """Total budget counter grows even when fix counter resets on tests."""
+        # 2 edits, test, 2 edits, test, 2 edits — fix never exceeds 2
+        for _ in range(3):
+            self._run_hook("Edit", file_path="/project/src/a.py")
+            self._run_hook("Edit", file_path="/project/src/b.py")
+            self._run_hook("Bash", command="pytest tests/")
+        assert self._read_fix_count() == 0, "Fix count should be 0 after test"
+        assert self._read_total_count() == 6, "Total should accumulate across resets"
+
+    def test_budget_reset_clears_both_counters(self) -> None:
+        """budget-reset Bash command resets both counters."""
+        self._run_hook("Edit", file_path="/project/src/a.py")
+        self._run_hook("Edit", file_path="/project/src/b.py")
+        assert self._read_total_count() == 2
+        self._run_hook("Bash", command="echo budget-reset")
+        assert self._read_fix_count() == 0, "Fix count should reset"
+        assert self._read_total_count() == 0, "Total should reset on budget-reset"
+
+    def test_budget_block_message(self) -> None:
+        """When total mutations exceed default (medium=7) budget, block."""
+        # Write state directly to simulate being at budget limit
+        self.STATE_FILE.write_text("0\n7\n")
+        result = self._run_hook("Edit", file_path="/project/src/overflow.py")
+        assert result.returncode == 2, f"Expected budget block, got {result.returncode}"
+        assert "BUDGET EXHAUSTED" in result.stderr
 
 
 # ── risk-classifier hook tests ────────────────────────────────────────────
