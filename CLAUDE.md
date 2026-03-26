@@ -89,6 +89,7 @@ See `docs/oversight-matrix.md` for the full reference with examples.
 - Blast radius: cross-references Edit/Write paths against active task's section contract owned_paths; blocks out-of-scope mutations when section is assigned
 - State snapshot: branch, commit, tasks, modified files persisted at session end (valid JSON via Python)
 - Audit run record: warns if no run record written during session
+- Build integrity: warns (does not block) when editing infrastructure files (hooks, CI, packaging, settings, Dockerfiles, release scripts, .gitignore)
 - Langfuse trace: session metrics sent to Langfuse (when configured)
 
 ## What's NOT Enforced by Hooks (still important)
