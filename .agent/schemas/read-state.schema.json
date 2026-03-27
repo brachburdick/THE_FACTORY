@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Read State Entry",
+  "description": "A file read logged to .agent/read-state.jsonl by PostToolUse hook. Used for cross-session cache freshness checks.",
+  "type": "object",
+  "required": ["path", "hash", "timestamp", "session"],
+  "properties": {
+    "path": {
+      "type": "string",
+      "description": "File path relative to project root."
+    },
+    "hash": {
+      "type": "string",
+      "description": "SHA-256 prefix (16 chars) of file content at read time."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the file was read."
+    },
+    "session": {
+      "type": "string",
+      "description": "Session ID that read the file."
+    }
+  },
+  "additionalProperties": true
+}

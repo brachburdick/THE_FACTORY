@@ -31,7 +31,17 @@
     "blockers": {
       "type": "array",
       "items": { "type": "string" },
-      "description": "List of task IDs or labels that block this task"
+      "description": "DEPRECATED — use blocked_by. Free-text list of blockers."
+    },
+    "blocked_by": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Task IDs that must be 'complete' before this task is ready. Used by scripts/ready.py for dependency resolution."
+    },
+    "priority": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"],
+      "description": "Task priority. ready.py sorts by: critical > high > medium > low."
     },
     "plan_checkpoints": {
       "type": "array",

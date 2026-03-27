@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Decision Queue Entry",
+  "description": "A question or decision request in .agent/questions.jsonl. Agent writes when hitting uncertainty; operator answers asynchronously.",
+  "type": "object",
+  "required": ["id", "task", "question", "status", "asked"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique question identifier (e.g., q-001)"
+    },
+    "task": {
+      "type": "string",
+      "description": "Task ID this question relates to. Task is blocked while status is 'pending'."
+    },
+    "question": {
+      "type": "string",
+      "description": "The question, written clearly enough for async review without session context."
+    },
+    "context": {
+      "type": "string",
+      "description": "Brief background: what the agent was doing, what it discovered, why it's stuck."
+    },
+    "options": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Concrete choices. If provided, operator can pick one or write free-text."
+    },
+    "default": {
+      "type": "string",
+      "description": "Agent's recommended option. Used for auto-resolve after trust calibration."
+    },
+    "impact": {
+      "type": "string",
+      "description": "What depends on this decision. Helps operator prioritize."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["pending", "answered", "auto-resolved"],
+      "description": "pending = awaiting operator. answered = operator responded. auto-resolved = system applied default after trust threshold met."
+    },
+    "asked": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the question was written."
+    },
+    "answered": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "When the operator answered. Null while pending."
+    },
+    "answer": {
+      "type": ["string", "null"],
+      "description": "Operator's answer. Free text or one of the options."
+    }
+  },
+  "additionalProperties": true
+}

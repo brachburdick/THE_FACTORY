@@ -1,5 +1,7 @@
 # Lens D: Prompt Linguistics — Analysis & Findings
 
+> **Status: ARCHIVED.** Lens D was piloted during the v2.2→v3.0 sprint and retired. The operator's language was too uniform (consistent L3 scoped directives, low emotional valence, front-loaded) to produce actionable per-session signal. The three-lens framework (A: Efficiency, B: Quality, C: Knowledge) remains canonical. See `conversation-analysis-prompts.md` for the active prompts.
+
 **Date:** 2026-03-26
 **Scope:** Analysis of operator prompt patterns across THE_FACTORY conversation corpus and pipeline documentation
 **Purpose:** Assess the linguistic characteristics, sentiment patterns, and communication strategies the operator uses when prompting AI agents, and identify areas for improvement backed by findings suitable for comparison against academic research on human-AI communication effectiveness.

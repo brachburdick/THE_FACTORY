@@ -9,6 +9,29 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent
 SCUE_ROOT = ROOT / "projects" / "DjTools" / "scue"
 AGENT_DIR = ROOT / ".agent"
+HOOKS_DIR = ROOT / ".claude" / "hooks"
+
+# Hook state files that leak across test runs (mining finding: 3 sessions hit this)
+HOOK_STATE_FILES = [
+    HOOKS_DIR / "fix-attempt-tracker.state",
+]
+
+
+@pytest.fixture(autouse=True)
+def _reset_hook_state():
+    """Reset hook state files before each test to prevent cross-test pollution.
+
+    Mining finding tf-072: fix-attempt-tracker.state accumulated during sessions
+    and leaked across test classes, causing flaky test failures in 3/8 sessions.
+    """
+    for state_file in HOOK_STATE_FILES:
+        if state_file.exists():
+            state_file.unlink()
+    yield
+    # Also clean up after — leaves clean state for manual runs
+    for state_file in HOOK_STATE_FILES:
+        if state_file.exists():
+            state_file.unlink()
 
 
 @pytest.fixture

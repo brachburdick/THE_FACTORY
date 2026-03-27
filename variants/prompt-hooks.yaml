@@ -1,0 +1,23 @@
+# Variant: prompt-hooks — THE_FACTORY with LLM-based Bash command gating.
+# Added in automation-2 batch (tf-089). Uses type:prompt PreToolUse hook
+# to evaluate Bash commands for production/shared-state risk.
+
+name: prompt-hooks
+description: Baseline + prompt-type PreToolUse hook for Bash risk gating
+model: claude-opus-4-6
+orchestration: single-agent
+hooks:
+  - git-guard (command)
+  - fix-attempt-tracker (command)
+  - bash-risk-logger (command)
+  - bash-risk-gate (prompt)
+  - risk-classifier (command)
+  - blast-radius (command)
+  - plan-gate (command)
+  - build-integrity (command)
+  - reference-check (command)
+notes: >
+  Pilot variant. The prompt hook adds ~2-5s latency per Bash call.
+  Log data in .agent/prompt-hook-log.jsonl for calibration.
+  Compare human_touches.total against baseline to measure whether
+  the prompt hook reduces operator corrections.

@@ -73,12 +73,49 @@
     "operator_interventions": {
       "type": "integer",
       "minimum": 0,
-      "description": "Number of times the operator intervened (corrections, re-directions, scope changes) during this run. 0 means fully autonomous."
+      "description": "DEPRECATED — use human_touches.corrections. Number of operator interventions."
     },
     "agent_escalations": {
       "type": "integer",
       "minimum": 0,
-      "description": "Number of times the agent escalated to the operator (AskUserQuestion, blocked result, incident log). Measures agent uncertainty."
+      "description": "DEPRECATED — use human_touches.escalations. Number of agent escalations."
+    },
+    "human_touches": {
+      "type": "object",
+      "description": "Structured count of all human interactions during this run. The total is the key automation-effectiveness metric: lower = more autonomous.",
+      "properties": {
+        "questions": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Questions asked by agent (AskUserQuestion, decision queue)"
+        },
+        "corrections": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Operator redirections, scope changes, or 'no, do X instead'"
+        },
+        "escalations": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Agent escalated to operator (blocked, incident, uncertainty)"
+        },
+        "approvals": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Gated checkpoints requiring operator sign-off (spec, plan, PR)"
+        },
+        "reviews": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Artifacts submitted for operator review"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Sum of all above. The headline metric for pipeline comparison."
+        }
+      },
+      "required": ["total"]
     },
     "note": {
       "type": "string",

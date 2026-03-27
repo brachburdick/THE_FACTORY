@@ -364,3 +364,6 @@ FULLY AUTOMATIC ◄────────────────────�
 | **Change process** | Edit `CLAUDE.md` (it's the constitution — agent reads it first) |
 | **Add project** | `mkdir projects/NewProject && cd projects/NewProject && git init` |
 | **Review pipeline** | `python scripts/assess.py --last 20` → look at waste%, success rate |
+| **See all skills** | `cat skills/index.json` (auto-built by `scripts/build-skill-index.py`) |
+| **Package a skill** | `bash scripts/pack-skill.sh skills/my-skill` → `my-skill.skill` |
+| **Install a skill** | `bash scripts/install-skill.sh my-skill.skill` → `skills/custom/my-skill/` |

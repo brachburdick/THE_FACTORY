@@ -4,6 +4,8 @@
 **Sessions analyzed:** 20 (top by content size from 148 extracted)
 **Method:** Three parallel lens agents (Process Efficiency, Quality & Correctness, Learning & Knowledge) each sampled all 20 transcripts, then findings were synthesized and cross-referenced with PROTOCOL_IMPROVEMENTS.md.
 
+> **Follow-up analysis:** A second mining pass covering the v2.2→v3.0 sprint (8 sessions, 2026-03-26) is at [`mining-v22-v30-synthesis.md`](mining-v22-v30-synthesis.md). Waste dropped from ~25% to ~15%. Lens D (Prompt Linguistics) was piloted and then retired — operator language was too uniform to yield actionable signal. The three-lens framework (A/B/C) remains canonical.
+
 ---
 
 ## Cross-Lens Patterns

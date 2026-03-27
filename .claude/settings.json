@@ -13,12 +13,27 @@
             "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/fix-attempt-tracker.sh",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/bash-risk-logger.sh",
+            "timeout": 5
+          },
+          {
+            "type": "prompt",
+            "prompt": "You are a security gatekeeper for a CLI coding assistant. Evaluate this Bash command for risk.\n\nTool input: $ARGUMENTS\n\nClassify the command into one of these risk levels:\n- SAFE: read-only commands (ls, cat, grep, git status, git log, git diff, echo, pwd, wc, head, tail, find, npm run dev, pytest, python -m pytest, npm run build, npm run typecheck, pip list)\n- MODERATE: local file modifications within the project directory (rm, mv, cp, mkdir, chmod within project), package installs (npm install, pip install), running scripts\n- DANGEROUS: commands that affect production/shared state (git push, docker push, ssh, scp, deploy, sudo, kill, systemctl, npm publish, curl with POST/PUT/DELETE, database commands)\n\nRespond with ONLY this JSON (no other text):\n{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"DECISION\",\"permissionDecisionReason\":\"confidence:SCORE/100 risk:LEVEL reason:BRIEF_REASON\"}}\n\nRules:\n- SAFE → permissionDecision: \"allow\"\n- MODERATE → permissionDecision: \"allow\" (but log it)\n- DANGEROUS → permissionDecision: \"ask\" (let the user decide)\n- Include a confidence score 0-100 in the reason string for calibration\n- When in doubt, choose \"ask\" not \"deny\"",
+            "timeout": 10
           }
         ]
       },
       {
         "matcher": "Edit",
         "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/reference-check.sh",
+            "timeout": 5
+          },
           {
             "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/risk-classifier.sh",
@@ -72,6 +87,28 @@
           {
             "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/build-integrity.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/find-python.sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/mid-session-snapshot.py",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/find-python.sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/read-state-logger.py",
             "timeout": 5
           }
         ]

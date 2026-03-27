@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Stop hook: Write session state snapshot for cross-session continuity.
+"""PostToolUse hook: Lightweight mid-session state snapshot.
 
-Addresses mining finding #1: 10% ramp-up tax + 1500 wasted tool calls.
-The snapshot is read at next session start to skip re-exploration.
-
-No jq dependency. Produces guaranteed-valid JSON.
+Fires after Edit/Write. Counts mutations via fix-attempt-tracker.state.
+Every SNAPSHOT_INTERVAL mutations, writes a lightweight snapshot (no pytest,
+no incident scan). Implements "Assume Interruption" — if the session dies,
+the next session inherits recent state instead of starting from zero.
 """
 
 import json
@@ -13,16 +13,13 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+SNAPSHOT_INTERVAL = 15  # Write snapshot every N mutations
+
 
 def git(args: list[str], cwd: str) -> str:
-    """Run a git command, return stdout or empty string on failure."""
     try:
         result = subprocess.run(
-            ["git"] + args,
-            cwd=cwd,
-            capture_output=True,
-            text=True,
-            timeout=5,
+            ["git"] + args, cwd=cwd, capture_output=True, text=True, timeout=5
         )
         return result.stdout.strip() if result.returncode == 0 else ""
     except Exception:
@@ -34,7 +31,6 @@ def main() -> None:
         raw = sys.stdin.read()
         data = json.loads(raw)
     except Exception:
-        # Can't parse input — skip silently (non-critical hook)
         sys.exit(0)
 
     session_id = data.get("session_id", "unknown")
@@ -56,9 +52,25 @@ def main() -> None:
 
     root = str(project_root)
     agent_dir = project_root / ".agent"
-    agent_dir.mkdir(parents=True, exist_ok=True)
+    hooks_dir = project_root / ".claude" / "hooks"
 
-    # Gather state
+    # Check mutation count from fix-attempt-tracker state
+    tracker_state = hooks_dir / "fix-attempt-tracker.state"
+    if not tracker_state.exists():
+        sys.exit(0)
+
+    try:
+        lines = tracker_state.read_text().splitlines()
+        total_mutations = int(lines[1]) if len(lines) > 1 else 0
+    except (ValueError, IndexError):
+        sys.exit(0)
+
+    # Only snapshot at intervals (and not at 0)
+    if total_mutations == 0 or total_mutations % SNAPSHOT_INTERVAL != 0:
+        sys.exit(0)
+
+    # --- Lightweight snapshot (no pytest, no incident scan) ---
+
     branch = git(["rev-parse", "--abbrev-ref", "HEAD"], root) or "unknown"
     last_commit = git(["log", "-1", "--format=%H %s"], root) or "unknown"
 
@@ -68,7 +80,7 @@ def main() -> None:
     staged_raw = git(["diff", "--cached", "--name-only"], root)
     staged_files = [f for f in staged_raw.splitlines() if f][:20]
 
-    # Read active tasks with canonical dedup (last entry per ID wins)
+    # Read active tasks
     active_tasks = []
     tasks_file = agent_dir / "tasks.jsonl"
     if tasks_file.exists():
@@ -79,13 +91,11 @@ def main() -> None:
                 continue
             try:
                 task = json.loads(line)
-                task_id = task.get("id", "")
-                if task_id:
-                    canonical[task_id] = task
+                tid = task.get("id", "")
+                if tid:
+                    canonical[tid] = task
             except json.JSONDecodeError:
                 continue
-
-        # Include in_progress and blocked tasks (pending omitted — in tasks.jsonl if needed)
         for task in canonical.values():
             status = task.get("status", "")
             if status in ("in_progress", "blocked"):
@@ -96,7 +106,7 @@ def main() -> None:
                     "summary": task.get("summary", ""),
                 })
 
-    # Read prior session knowledge (preserve across sessions if exists)
+    # Preserve session knowledge
     session_knowledge = {}
     knowledge_file = agent_dir / "session-knowledge.json"
     if knowledge_file.exists():
@@ -105,50 +115,20 @@ def main() -> None:
         except (json.JSONDecodeError, OSError):
             pass
 
-    # Read session friction from fix-attempt-tracker state
+    # Friction from tracker
     friction: dict[str, int] = {}
-    hooks_dir = project_root / ".claude" / "hooks"
-    tracker_state = hooks_dir / "fix-attempt-tracker.state"
-    if tracker_state.exists():
-        try:
-            lines = tracker_state.read_text().splitlines()
-            friction = {
-                "mutations_since_test": int(lines[0]) if len(lines) > 0 else 0,
-                "total_mutations": int(lines[1]) if len(lines) > 1 else 0,
-                "test_cycles": int(lines[2]) if len(lines) > 2 else 0,
-                "unique_files_modified": len(lines[3].split(",")) if len(lines) > 3 and lines[3] else 0,
-            }
-        except (ValueError, IndexError):
-            pass
-
-    # Count incidents logged this session
-    incidents_file = agent_dir / "incidents.jsonl"
-    incident_count = 0
-    if incidents_file.exists():
-        for line in incidents_file.read_text().splitlines():
-            if line.strip():
-                incident_count += 1
-    friction["incidents_logged"] = incident_count
-
-    # Capture baseline test failures for the next session
-    # Mining finding tf-075: agents waste time investigating pre-existing failures
-    baseline_test_failures: list[str] = []
     try:
-        result = subprocess.run(
-            [sys.executable, "-m", "pytest", "evals/", "-v", "--tb=no", "-q"],
-            cwd=root,
-            capture_output=True,
-            text=True,
-            timeout=60,
-        )
-        if result.returncode != 0:
-            for line in result.stdout.splitlines():
-                if line.strip().startswith("FAILED"):
-                    baseline_test_failures.append(line.strip())
-    except Exception:
-        pass  # Non-critical — skip if pytest unavailable
+        lines = tracker_state.read_text().splitlines()
+        friction = {
+            "mutations_since_test": int(lines[0]) if len(lines) > 0 else 0,
+            "total_mutations": int(lines[1]) if len(lines) > 1 else 0,
+            "test_cycles": int(lines[2]) if len(lines) > 2 else 0,
+            "unique_files_modified": len(lines[3].split(",")) if len(lines) > 3 and lines[3] else 0,
+        }
+    except (ValueError, IndexError):
+        pass
 
-    # Write snapshot — guaranteed valid JSON via json.dumps
+    # Atomic write
     snapshot = {
         "session_id": session_id,
         "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -161,11 +141,13 @@ def main() -> None:
         "session_friction": friction,
         "session_knowledge": session_knowledge,
         "working_directory": cwd,
-        "baseline_test_failures": baseline_test_failures,
+        "mid_session": True,
     }
 
     snapshot_path = agent_dir / "state-snapshot.json"
-    snapshot_path.write_text(json.dumps(snapshot, indent=2) + "\n")
+    tmp_path = snapshot_path.with_suffix(".tmp")
+    tmp_path.write_text(json.dumps(snapshot, indent=2) + "\n")
+    tmp_path.rename(snapshot_path)
 
 
 if __name__ == "__main__":

@@ -27,7 +27,14 @@ The agent classifies the task and loads the appropriate flow skill:
 
 You don't invoke these. They fire on their own:
 - **git-guard:** Blocks commits to main, force-push, reset --hard
-- **state-snapshot:** Writes branch/commit/tasks/modified-files to `.agent/state-snapshot.json` at session end
+- **fix-attempt-tracker:** Blocks after 2 edits without tests, 10 total mutations, 4 edit-test cycles, or 10 unique files
+- **risk-classifier:** Blocks high-risk mutations without an approved plan
+- **blast-radius:** Blocks edits outside the active task's owned_paths
+- **reference-check:** Advisory — warns when an Edit replaces a string found in evals/ or hooks/ (prevents rename→eval-failure rework)
+- **plan-gate:** Blocks high-risk edits without a plan file
+- **build-integrity:** Warns (doesn't block) on edits to infrastructure files
+- **audit-run-record:** Warns at session end if no run record was written
+- **state-snapshot:** Writes branch/commit/tasks/modified-files/baseline-test-failures to `.agent/state-snapshot.json` at session end
 - **langfuse-trace:** Sends session metrics to Langfuse (when env vars are set)
 
 ### When Sessions End
@@ -55,14 +62,17 @@ The hooks handle state persistence. The agent should still:
 **When the agent hits a wall:**
 
 1. It tells you what it tried and why it failed
-2. You decide: "keep going, try this angle" or "let me spin up a researcher"
-3. If you dispatch a researcher, give it the specific question and file scope
+2. After 3 failed environment/hardware probes, it should ask you before continuing to investigate (3-probe-then-ask rule)
+3. You decide: "keep going, try this angle" or "let me spin up a researcher"
+4. If you dispatch a researcher, give it the specific question and file scope
 
-**Good dispatch:** "Research the beat-link TimeFinder API — specifically whether `getTimeFor()` works over DLP connections. Check the Java source in `bridge-java/` and the beat-link docs. Report back what you find."
+**Good dispatch:** "Extract the playlist navigation API methods from beat-link source — specifically `requestPlaylistItemsFrom` parameter semantics. Check `bridge-java/` and return method signatures with parameter descriptions."
 
 **Bad dispatch:** "Go explore SCUE and find the problem."
 
-Targeted dispatch with specific context > auto-spawned multi-agent exploration. Mining confirmed: single agent + verification > naive multi-agent. The #1 waste source was 29 auto-spawned subagents reading overlapping files.
+**Subagent prompt rule:** Use "Extract [specific data] from [specific files] as [format]" — not "read all X files." Vague prompts produce summaries that force the main agent to re-read everything (mining: v2.2→v3.0 confirmed this pattern in 3/8 sessions).
+
+Targeted dispatch with specific context > auto-spawned multi-agent exploration. Mining confirmed: single agent + verification > naive multi-agent.
 
 ---
 
@@ -99,13 +109,13 @@ Targeted dispatch with specific context > auto-spawned multi-agent exploration. 
 
 ### Baselines to Track
 
-| Metric | Phase 0 Baseline | Target |
-|--------|-----------------|--------|
-| Overall waste | ~25% | <10% |
-| Bug catch rate | 75% | >90% |
-| Reads before first Edit | 15-30 | <5 |
-| API misuse bugs / 20 sessions | 7 | <2 |
-| Pre-existing test failures | 2 | 0 |
+| Metric | Phase 0 Baseline | v3.0 Sprint | Target |
+|--------|-----------------|-------------|--------|
+| Overall waste | ~25% | ~15% | <10% |
+| Bug catch rate | 75% | 82% | >90% |
+| Reads before first Edit | 15-30 | 5-14 | <5 |
+| API misuse bugs / 20 sessions | 7 | 1 | <2 |
+| Pre-existing test failures | 2 | 0 (now tracked in state snapshot) | 0 |
 
 ---
 
@@ -113,7 +123,7 @@ Targeted dispatch with specific context > auto-spawned multi-agent exploration. 
 
 ```bash
 # Eval suite
-.venv/bin/python -m pytest evals/ -v              # Run all 42 tests
+.venv/bin/python -m pytest evals/ -v              # Run all ~99 tests
 .venv/bin/python -m pytest evals/ -k convention    # Just conventions
 .venv/bin/python -m pytest evals/ -k mining        # Just mining regression
 

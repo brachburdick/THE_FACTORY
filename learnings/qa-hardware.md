@@ -1,0 +1,5 @@
+# QA with Hardware
+
+- **Hardware mutation is a blind spot.** QA plans for hardware-connected features naturally assume the hardware config stays constant throughout testing. But real users change hardware mid-session (swap USBs, unplug cables, power-cycle devices). Stale connection state after hardware changes causes "phantom bugs" — features that pass QA but break in real use, with no obvious trigger. This was a recurring problem in SCUE's bridge/scanner features across multiple sessions before the pattern was identified (2026-03-25).
+- **Every hardware QA plan needs a "Hardware Mutation" phase.** Test: device remove, device insert, device swap, action-during-change (e.g. scan during USB pull), and recovery-after-change. These CANNOT be tested via code review — they require the operator to physically change hardware while the agent observes system behavior.
+- **Consider a dedicated QA skill** for hardware-connected projects that automatically injects mutation scenarios into QA plans. The skill should prompt the operator for physical actions and verify system response.

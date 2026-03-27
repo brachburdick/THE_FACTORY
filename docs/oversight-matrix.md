@@ -19,12 +19,16 @@ Set explicitly on the task (`risk` field in tasks.jsonl) or inferred by the risk
 
 ## What Hooks Enforce
 
-| Hook | Routine | Gated |
-|---|---|---|
-| fix-attempt-tracker | Active (budget=10) | Active (budget=10) |
-| risk-classifier | Skip | Allow (medium) / Block without plan (high) |
-| blast-radius | Active | Active |
-| plan-gate | Skip | Active for high-risk |
+| Hook | Routine | Gated | Type |
+|---|---|---|---|
+| fix-attempt-tracker | Active (budget=10) | Active (budget=10) | Blocking |
+| risk-classifier | Skip | Allow (medium) / Block without plan (high) | Blocking |
+| blast-radius | Active | Active | Blocking |
+| plan-gate | Skip | Active for high-risk | Blocking |
+| reference-check | Active | Active | Advisory (warns on rename→eval conflicts) |
+| build-integrity | Active | Active | Advisory (warns on infra file edits) |
+| git-guard | Active | Active | Blocking |
+| audit-run-record | Active | Active | Advisory (warns if no run record) |
 
 Compound budget is **10 mutations** regardless of risk. Circuit breaker thresholds: **4 edit-test cycles**, **10 unique files**. These are universal — if you hit them, something is wrong regardless of risk level.
 
@@ -41,3 +45,5 @@ Compound budget is **10 mutations** regardless of risk. Circuit breaker threshol
 
 Track in run records: `operator_interventions`, `agent_escalations`, `result`.
 Feed into `assess.py` for trend analysis.
+
+State snapshot now captures `baseline_test_failures` — list of failing tests at session end, so the next session knows which failures are pre-existing vs. newly introduced.

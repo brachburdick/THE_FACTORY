@@ -1,30 +1,30 @@
 {
-  "session_id": "4cb11bfd-b832-4754-a600-67fc0a21775a",
-  "timestamp": "2026-03-27T00:51:29Z",
+  "session_id": "test-session",
+  "timestamp": "2026-03-27T02:44:17Z",
   "project_root": "/Users/brach/Documents/THE_FACTORY",
   "branch": "v3.0",
-  "last_commit": "d2aad2b6debd698861d8fdc587e08b18dbb3a00a Housekeeping: dedup tasks.jsonl, update docs for v3.0 completion",
+  "last_commit": "247ef32ae9cb9e6a16f78e89820c8562c78f4528 Apply all changes for v3.0",
   "modified_files": [
     ".agent/incidents.jsonl",
-    ".agent/reports/token-dashboard.html",
     ".agent/runs.jsonl",
-    ".agent/schemas/handoff-envelope.json",
     ".agent/schemas/run.schema.json",
+    ".agent/schemas/task.schema.json",
     ".agent/state-snapshot.json",
-    ".claude/.DS_Store",
-    ".claude/hooks/blast-radius.sh",
-    ".claude/hooks/fix-attempt-tracker.sh",
-    ".claude/hooks/risk-classifier.sh",
+    ".agent/tasks.jsonl",
     ".claude/hooks/state-snapshot.py",
-    ".claude/skills/.DS_Store",
-    ".claude/skills/debug-flow/SKILL.md",
-    ".claude/skills/feature-flow/SKILL.md",
-    ".claude/skills/refactor-flow/SKILL.md",
+    ".claude/plans/v22-consolidated-improvement-plan.md",
+    ".claude/settings.json",
+    "CLAUDE.md",
     "LEARNINGS.md",
     "docs/oversight-matrix.md",
-    "evals/.DS_Store",
+    "evals/__pycache__/conftest.cpython-313-pytest-9.0.2.pyc",
     "evals/__pycache__/test_conventions.cpython-313-pytest-9.0.2.pyc",
-    "evals/__pycache__/test_flows.cpython-313-pytest-9.0.2.pyc"
+    "evals/__pycache__/test_flows.cpython-313-pytest-9.0.2.pyc",
+    "evals/__pycache__/test_handoffs.cpython-313-pytest-9.0.2.pyc",
+    "evals/__pycache__/test_mining.cpython-313-pytest-9.0.2.pyc",
+    "evals/conftest.py",
+    "support/v1.10/conversation-analysis-prompts.md",
+    "support/v2/conversation-mining-results.md"
   ],
   "staged_files": [],
   "active_tasks": [
@@ -55,10 +55,9 @@
   ],
   "session_friction": {
     "mutations_since_test": 0,
-    "total_mutations": 0,
+    "total_mutations": 15,
     "test_cycles": 0,
-    "unique_files_modified": 0,
-    "incidents_logged": 79
+    "unique_files_modified": 0
   },
   "session_knowledge": {
     "decisions": [
@@ -80,5 +79,6 @@
       "tf-030 (context metrics in run records) would close the measurement loop \u2014 not implemented yet"
     ]
   },
-  "working_directory": "/Users/brach/Documents/THE_FACTORY"
+  "working_directory": "/Users/brach/Documents/THE_FACTORY",
+  "mid_session": true
 }

@@ -216,95 +216,20 @@ Cross-session summary:
 
 ---
 
-## Lens D: Review Prompt Linguistics
-
-> **Focus:** How the operator's review-request language shapes agent behavior.
-> Analyze tone, instruction structure, constraint style, and wording patterns
-> that make review tasks clearer, riskier, faster, or harder to execute well.
-
-### Prompt
-
-```
-You are analyzing Claude Code conversation transcripts to identify linguistic
-patterns in how the operator requests reviews from agents. Focus on operator-
-authored review requests, review redirections, and loaded prompt artifacts.
-Separate operator language from system/developer boilerplate whenever possible.
-
-For each session transcript provided, extract:
-
-**1. Sentiment and stance**
-- What is the emotional tone of the review request? (neutral, supportive,
-  urgent, skeptical, corrective, adversarial)
-- Does the prompt communicate trust, pressure, caution, dissatisfaction, or
-  confidence?
-- Is the tone stable throughout the session, or does it shift after errors,
-  delays, or rework?
-
-**2. Instruction architecture**
-- How many distinct goals are stacked into one request?
-- Are role, scope, evidence standard, and output shape explicit or implicit?
-- Are constraints mostly positive ("do X") or negative ("do not Y")?
-- Does the prompt distinguish analysis, recommendation, and implementation
-  phases, or compress them together?
-
-**3. Language patterns that affect performance**
-- Which phrases appear to anchor strong review behavior? (e.g. evidence-first,
-  smallest-fix framing, scope containment, exact output shape)
-- Which phrases may create ambiguity, overload, over-constraint, or bias?
-- Are there overloaded sentences, shifting referents, compressed jargon, or
-  contradictory instructions?
-- Does the prompt invite uncertainty surfacing when the task is ambiguous, or
-  does it implicitly reward premature certainty?
-
-**4. Rewrite opportunities**
-- Which review prompts could be made clearer, calmer, or more agent-legible
-  without losing rigor?
-- For each rewrite, preserve intent while reducing ambiguity or cognitive load
-- Call out where examples, ordering, or explicit success criteria would help
-  more than stronger wording
-
-**Output format:**
-For each session:
-
-```json
-{
-  "session_id": "...",
-  "linguistic_score": 1-5,
-  "review_prompt_tone": "supportive|neutral|urgent|skeptical|mixed",
-  "constraint_style": "positive|negative|mixed",
-  "goal_stacking": "low|med|high",
-  "effective_patterns": [{"pattern": "...", "effect": "...", "evidence": "..."}],
-  "friction_patterns": [{"pattern": "...", "risk": "...", "evidence": "..."}],
-  "rewrite_candidates": [{"original": "short excerpt or paraphrase", "improved": "...", "why": "..."}],
-  "top_prompting_improvement": "one sentence"
-}
-```
-
-Cross-session summary:
-- Dominant tone profile in review requests
-- Most effective language patterns to preserve
-- Most costly linguistic anti-patterns
-- Prompt-template improvements that would likely increase review quality,
-  calibration, or speed
-```
-
----
-
 ## Synthesis Agent
 
-> **Input:** The four lens reports (A, B, C, D) from one or more batches.
+> **Input:** The three lens reports (A, B, C) from one or more batches.
 > **Goal:** Combine findings into ranked, actionable improvements.
 
 ### Prompt
 
 ```
-You have received analysis reports from four specialized lens agents that
+You have received analysis reports from three specialized lens agents that
 examined the same set of conversation transcripts:
 
 - **Lens A (Process Efficiency):** [paste report]
 - **Lens B (Quality & Correctness):** [paste report]
 - **Lens C (Learning & Knowledge):** [paste report]
-- **Lens D (Review Prompt Linguistics):** [paste report]
 
 Your job is to synthesize these into a single prioritized improvement plan.
 
@@ -397,18 +322,17 @@ Output a ranked list of improvements:
 
 1. **Select sessions:** Run the selection script (Step 0), pick 20
 2. **Batch:** Group into 4 batches of 5 by time proximity
-3. **For each batch, launch 4 agents in parallel:**
+3. **For each batch, launch 3 agents in parallel:**
    - Lens A (process efficiency) with the 5 session markdown files
    - Lens B (quality & correctness) with the same 5 files
    - Lens C (learning & knowledge) with the same 5 files
-   - Lens D (review prompt linguistics) with the same 5 files
-4. **Collect:** 16 lens reports total (4 lenses × 4 batches)
-5. **Per-batch synthesis:** Run synthesis agent on each batch's 4 reports (4 runs)
-6. **Final synthesis:** Run synthesis agent on the 4 batch syntheses → final ranked list
+4. **Collect:** lens reports (3 lenses × N batches)
+5. **Per-batch synthesis:** Run synthesis agent on each batch's 3 reports
+6. **Final synthesis:** Run synthesis agent on the batch syntheses → final ranked list
 7. **Triage:** ACCEPT / DEFER / REJECT each improvement
 8. **Route:** Project improvements → project `.agent/project-observations.md`.
    Pipeline improvements → `PROTOCOL_IMPROVEMENTS.md`
 9. **Action:** Follow v1.10 execution instructions Steps 6-9 (eval cases → implement → verify)
 
-**Cost estimate:** ~16 agent sessions for lens analysis + 5 for synthesis = 21 total.
-At ~$2-3 per session, ~$45-65 for a full 20-session analysis cycle.
+**Cost estimate:** ~3 agent sessions for lens analysis + 1 for synthesis = 4 total per batch.
+At ~$2-3 per session, ~$8-12 per batch.

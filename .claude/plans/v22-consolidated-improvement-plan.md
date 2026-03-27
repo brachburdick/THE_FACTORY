@@ -5,6 +5,8 @@
 **Status:** COMPLETE — 44/44 net-new tasks shipped. 9 pre-existing tasks remain pending (tf-011–014, tf-028–030, tinyshop-designer, tinyshop-phase1).
 **Sources:** 12 plan/proposal files (Claude + GPT), v2.2 compass analysis, existing tasks.jsonl
 
+**Post-v3.0 mining addendum (2026-03-26):** 3-lens conversation mining on 8 v2.2→v3.0 sessions produced 15 additional improvements (tf-071–tf-085). 8 implemented immediately (reference-check hook, test isolation fixture, hook wiring memory, 3-probe-then-ask rule, baseline test failures in state snapshot, subagent prompt convention, Edit-over-Write convention, flow skill memory). 7 remain pending in mining-2 batch. See `support/v2/mining-v22-v30-synthesis.md`.
+
 ---
 
 ## Purpose
