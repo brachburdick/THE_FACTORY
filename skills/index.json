@@ -1,0 +1,111 @@
+[
+  {
+    "name": "brainstorm",
+    "path": "skills/brainstorm/SKILL.md",
+    "description": "Transform research findings into prioritized feature candidates. Use when the task involves generating ideas, applications, or possibilities from existing research. Signals: \"brainstorm\", \"ideate\", \"applications of\", \"what could we build\", \"possibilities\".",
+    "triggers": [
+      "brainstorm",
+      "ideate",
+      "applications of",
+      "what could we build",
+      "possibilities"
+    ],
+    "scope": "pipeline"
+  },
+  {
+    "name": "context-checkpoint",
+    "path": "skills/context-checkpoint/SKILL.md",
+    "description": "Use at natural task boundaries (after completing a sub-task, before starting a new phase) to compress context. Summarize completed work into a checkpoint file and offload details. Signals: \"context feels heavy\", \"turn > 25\", \"compress context\", \"checkpoint\".",
+    "triggers": [
+      "context feels heavy",
+      "turn > 25",
+      "compress context",
+      "checkpoint"
+    ],
+    "scope": "pipeline"
+  },
+  {
+    "name": "debug-flow",
+    "path": ".claude/skills/debug-flow/SKILL.md",
+    "description": "Use when the task involves fixing a bug, error, regression, failing test, unexpected behavior, or production incident. Signals: \"fix\", \"broken\", \"failing\", \"error\", \"regression\", \"not working\", \"crash\", \"timeout\".",
+    "triggers": [
+      "fix",
+      "broken",
+      "failing",
+      "error",
+      "regression",
+      "not working",
+      "crash",
+      "timeout"
+    ],
+    "scope": "flow"
+  },
+  {
+    "name": "feature-flow",
+    "path": ".claude/skills/feature-flow/SKILL.md",
+    "description": "Use when the task involves building new functionality, adding a capability, implementing a user story, creating a new endpoint/resolver/component, or extending existing behavior. Signals: \"implement\", \"add\", \"create\", \"new\", \"build\", \"feature\", \"endpoint\", \"resolver\", \"component\".",
+    "triggers": [
+      "implement",
+      "add",
+      "create",
+      "new",
+      "build",
+      "feature",
+      "endpoint",
+      "resolver",
+      "component"
+    ],
+    "scope": "flow"
+  },
+  {
+    "name": "handoff",
+    "path": "skills/handoff/SKILL.md",
+    "description": "Use when handing off work across a genuine domain boundary (e.g., audio analysis \u2192 DMX output, backend \u2192 frontend integration). Loads the JSON Schema envelope and validation script.",
+    "triggers": [],
+    "scope": "pipeline"
+  },
+  {
+    "name": "project-scaffold",
+    "path": "skills/project-scaffold/SKILL.md",
+    "description": "Use when bootstrapping a new project or syncing an existing project after a protocol change. Creates the .agent/ structure, project CLAUDE.md, and task tracker.",
+    "triggers": [],
+    "scope": "pipeline"
+  },
+  {
+    "name": "protocol-review",
+    "path": "skills/protocol-review/SKILL.md",
+    "description": "Use when reviewing and improving the meta-infrastructure protocol. Processes PROTOCOL_IMPROVEMENTS.md entries, updates the constitution, and creates eval cases for new rules.",
+    "triggers": [],
+    "scope": "pipeline"
+  },
+  {
+    "name": "refactor-flow",
+    "path": ".claude/skills/refactor-flow/SKILL.md",
+    "description": "Use when the task involves restructuring code without changing behavior. Signals: \"refactor\", \"extract\", \"consolidate\", \"clean up\", \"simplify\", \"reorganize\", \"dedup\", \"reduce complexity\", \"split\", \"merge module\".",
+    "triggers": [
+      "refactor",
+      "extract",
+      "consolidate",
+      "clean up",
+      "simplify",
+      "reorganize",
+      "dedup",
+      "reduce complexity",
+      "split",
+      "merge module"
+    ],
+    "scope": "flow"
+  },
+  {
+    "name": "section-review",
+    "path": "skills/section-review/SKILL.md",
+    "description": "Review, audit, or improve a project that has defined sections with boundary contracts. Three-pass model: section internals, boundary seams, integration. Triggered by: \"review\", \"audit\", \"quality check\", \"section review\".",
+    "triggers": [
+      "review",
+      "audit",
+      "quality check",
+      "section review"
+    ],
+    "scope": "pipeline"
+  }
+]

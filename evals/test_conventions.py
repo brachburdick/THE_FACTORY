@@ -587,3 +587,130 @@ class TestBeatLinkApiStyleDispatch:
             f"Waveform files call segmentHeight without style dispatch:\n"
             + "\n".join(violations)
         )
+
+
+# ── hook-pipeline-manifest ──────────────────────────────────────────────
+# Source: tf-095 (DeerFlow conservative improvements)
+# Rule: docs/hook-pipeline.md must list every hook wired in settings.json.
+
+
+@pytest.mark.convention
+class TestHookPipelineManifest:
+    """Hook pipeline manifest matches actual settings.json wiring."""
+
+    def _extract_hook_scripts_from_settings(self) -> set[str]:
+        """Parse settings.json and return all hook script basenames."""
+        settings_path = ROOT / ".claude" / "settings.json"
+        data = json.loads(settings_path.read_text())
+        scripts = set()
+        for phase_hooks in data.get("hooks", {}).values():
+            items = phase_hooks if isinstance(phase_hooks, list) else [phase_hooks]
+            for group in items:
+                hook_list = group.get("hooks", []) if isinstance(group, dict) else []
+                for hook in hook_list:
+                    cmd = hook.get("command", "")
+                    if hook.get("type") == "prompt":
+                        scripts.add("prompt risk classifier")
+                        continue
+                    # Extract basename from command string
+                    # Handle find-python.sh wrapper: actual script is the last arg
+                    parts = cmd.replace('"', "").split()
+                    for part in reversed(parts):
+                        basename = Path(part).name
+                        if basename.endswith((".sh", ".py")) and basename != "find-python.sh":
+                            scripts.add(basename)
+                            break
+        return scripts
+
+    def _extract_hook_names_from_manifest(self) -> set[str]:
+        """Parse docs/hook-pipeline.md and return all hook names from tables."""
+        manifest_path = ROOT / "docs" / "hook-pipeline.md"
+        names = set()
+        for line in manifest_path.read_text().splitlines():
+            # Match table rows: | N | hook-name.sh | ...
+            m = re.match(r"\|\s*\d+\s*\|\s*(.+?)\s*\|", line)
+            if m:
+                names.add(m.group(1).strip())
+        return names
+
+    def test_manifest_exists(self) -> None:
+        """docs/hook-pipeline.md exists."""
+        assert (ROOT / "docs" / "hook-pipeline.md").exists()
+
+    def test_every_settings_hook_in_manifest(self) -> None:
+        """Every hook in settings.json appears in the pipeline manifest."""
+        settings_hooks = self._extract_hook_scripts_from_settings()
+        manifest_hooks = self._extract_hook_names_from_manifest()
+        # Normalize: manifest uses basenames without extension for some
+        manifest_basenames = set()
+        for name in manifest_hooks:
+            manifest_basenames.add(name)
+            # Also add without extension for matching
+            manifest_basenames.add(Path(name).stem)
+        missing = []
+        for hook in sorted(settings_hooks):
+            # Check both exact match and stem match
+            if hook not in manifest_basenames and Path(hook).stem not in manifest_basenames:
+                missing.append(hook)
+        assert not missing, (
+            f"Hooks in settings.json missing from docs/hook-pipeline.md:\n"
+            + "\n".join(f"  - {h}" for h in missing)
+        )
+
+
+# ── skill-index-coverage ────────────────────────────────────────────────
+# Source: tf-096 (DeerFlow conservative improvements)
+# Rule: skills/index.json must list every SKILL.md in the repo.
+
+
+@pytest.mark.convention
+class TestSkillIndexCoverage:
+    """Skill index covers all SKILL.md files."""
+
+    def _find_pipeline_skills(self) -> list[Path]:
+        """Find all SKILL.md files in pipeline skill directories."""
+        skills = []
+        for pattern in ["skills/**/SKILL.md", ".claude/skills/**/SKILL.md"]:
+            skills.extend(ROOT.glob(pattern))
+        return skills
+
+    def test_index_exists(self) -> None:
+        """skills/index.json exists and is valid JSON."""
+        index_path = ROOT / "skills" / "index.json"
+        assert index_path.exists(), "skills/index.json not found"
+        data = json.loads(index_path.read_text())
+        assert isinstance(data, list), "skills/index.json must be a JSON array"
+
+    def test_every_skill_in_index(self) -> None:
+        """Every SKILL.md file appears in skills/index.json."""
+        index_path = ROOT / "skills" / "index.json"
+        data = json.loads(index_path.read_text())
+        indexed_paths = {entry["path"] for entry in data}
+        skills = self._find_pipeline_skills()
+        assert skills, "No SKILL.md files found"
+        missing = []
+        for skill in skills:
+            rel = str(skill.relative_to(ROOT))
+            if rel not in indexed_paths:
+                missing.append(rel)
+        assert not missing, (
+            f"SKILL.md files missing from skills/index.json:\n"
+            + "\n".join(f"  - {m}" for m in missing)
+        )
+
+
+# ── subagent-concurrency-guidance ────────────────────────────────────────
+# Source: tf-097 (DeerFlow conservative improvements)
+# Rule: CLAUDE.md must contain sub-agent concurrency cap guidance.
+
+
+@pytest.mark.convention
+class TestSubagentConcurrencyGuidance:
+    """CLAUDE.md contains sub-agent concurrency advisory."""
+
+    def test_concurrency_cap_in_claude_md(self) -> None:
+        """CLAUDE.md mentions sub-agent concurrency cap."""
+        text = (ROOT / "CLAUDE.md").read_text()
+        assert "concurrency cap" in text.lower() or "concurrent agent" in text.lower(), (
+            "CLAUDE.md missing sub-agent concurrency cap guidance"
+        )
