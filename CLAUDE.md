@@ -1,10 +1,45 @@
 # THE_FACTORY v2.1
 
+## Session Protocol
+- **Start:**
+  1. Load this file.
+  2. Check `.agent/state-snapshot.json` for prior session context. It contains decisions, dead ends, and key locations from the prior session — use them to skip re-exploration.
+  3. Check `.agent/tasks.jsonl` for pending/in_progress work. Claim a task by setting `status: "in_progress"` before starting. Use its `id` (e.g. `tf-003`) as your task reference throughout the session.
+  4. Check `LEARNINGS.md` for environment constraints before installing dependencies.
+  5. Load codebase orientation skill if working on a project.
+- **Mid-session:** Load skills as needed via trigger table. Reference the claimed task ID in commits, run records, and incident logs.
+- **End:** Hooks enforce landing procedure. State snapshot written automatically. If you completed work, you MUST have written a run record to `.agent/runs.jsonl` with the task ID before the session ends.
+
+## Oversight Policy
+
+Two tiers: **routine** (low-risk, known pattern) = autonomous. **Everything else** = gated (pause at phase gates for operator). High-risk tasks additionally require an approved plan before any source mutations. See `docs/oversight-matrix.md` for details.
+
+## What Hooks Enforce (don't duplicate in prose)
+- Git guard: no commits to main, no force-push, no reset --hard (fail-closed, no jq dependency)
+- Fix-attempt tracker: blocks after 2 source mutations (Edit/Write) without running tests; resets on test run. Compound budget: 10 total mutations per phase; resets on `budget-reset`. Circuit breakers: 4 edit-test cycles, 10 unique files.
+- Risk classifier: reads task risk level (low/medium/high), blocks high-risk source mutations without approved plan
+- Blast radius: cross-references Edit/Write paths against active task's section contract owned_paths; blocks out-of-scope mutations when section is assigned
+- State snapshot: branch, commit, tasks, modified files, decisions, dead ends persisted at session end (valid JSON via Python)
+- Audit run record: warns if no run record written during session
+- Build integrity: warns (does not block) when editing infrastructure files (hooks, CI, packaging, settings, Dockerfiles, release scripts, .gitignore)
+- Langfuse trace: session metrics sent to Langfuse (when configured)
+
 ## Core Principles
 - One operator agent. Specialist behavior via skills, not standing roles.
 - Evals over docs. Repeated failures become test cases, not rules.
 - Hooks enforce, skills inform. Deterministic enforcement > prompt discipline.
 - Progressive disclosure. Load skills on trigger, not at startup.
+
+## Flow Routing
+
+Classify the task, load the flow. Don't blend flows.
+
+| Signal | Flow | Posture |
+|---|---|---|
+| fix, bug, error, broken, regression, failing | `.claude/skills/debug-flow/` | Minimal change. Reproduce first. |
+| implement, add, create, new, build, feature | `.claude/skills/feature-flow/` | Spec first. Human confirms. |
+| refactor, extract, consolidate, simplify | `.claude/skills/refactor-flow/` | Read first. No behavior change. |
+| brainstorm, ideate, applications of | `skills/brainstorm/SKILL.md` | Generate. Operator triages. |
 
 ## Trigger Table
 
@@ -18,27 +53,6 @@ Pipeline-level skills. Project-specific triggers live in each project's own CLAU
 | Brainstorm / ideation | `skills/brainstorm/SKILL.md` | Research→candidates |
 | Section review / audit / quality check | `skills/section-review/SKILL.md` | Three-pass: section→boundary→integration |
 
-## Flow Routing
-
-Classify the task, load the flow. Don't blend flows.
-
-| Signal | Flow | Posture |
-|---|---|---|
-| fix, bug, error, broken, regression, failing | `.claude/skills/debug-flow/` | Minimal change. Reproduce first. |
-| implement, add, create, new, build, feature | `.claude/skills/feature-flow/` | Spec first. Human confirms. |
-| refactor, extract, consolidate, simplify | `.claude/skills/refactor-flow/` | Read first. No behavior change. |
-| brainstorm, ideate, applications of | `skills/brainstorm/SKILL.md` | Generate. Operator triages. |
-
-## Session Protocol
-- **Start:**
-  1. Load this file.
-  2. Check `.agent/state-snapshot.json` for prior session context.
-  3. Check `.agent/tasks.jsonl` for pending/in_progress work. Claim a task by setting `status: "in_progress"` before starting. Use its `id` (e.g. `tf-003`) as your task reference throughout the session.
-  4. Check `LEARNINGS.md` for environment constraints before installing dependencies.
-  5. Load codebase orientation skill if working on a project.
-- **Mid-session:** Load skills as needed via trigger table. Reference the claimed task ID in commits, run records, and incident logs.
-- **End:** Hooks enforce landing procedure. State snapshot written automatically. If you completed work, you MUST have written a run record to `.agent/runs.jsonl` with the task ID before the session ends.
-
 ## Three-Loop Control Model
 
 THE_FACTORY operates at three speeds with different gate strictness:
@@ -50,54 +64,6 @@ THE_FACTORY operates at three speeds with different gate strictness:
 | **Outer** (release→observe→learn) | Days/weeks | assess.py trends, DORA-like metrics, run record analysis, calibration reviews | Operator-driven — data informs threshold tuning |
 
 New enforcement mechanisms belong in the loop matching their speed. Inner-loop gates must be fast and deterministic. Middle-loop gates can require operator input. Outer-loop mechanisms are observational — they feed future threshold changes, not real-time blocks.
-
-## Oversight Policy
-
-Risk-tiered oversight replaces blanket human gates with selective ones.
-The oversight level for any action is determined by **three dimensions:**
-
-| Dimension | Low | Medium | High |
-|---|---|---|---|
-| **Risk** | Tests, docs, config, lint | Most features, bug fixes | Security, migrations, auth, cross-section |
-| **Evidence** | Tests pass, pattern is known | Tests exist, first attempt | No tests, novel pattern, prior failures |
-| **Ambiguity** | Clear spec, explicit criteria | Some open questions | Vague goals, no acceptance criteria |
-
-**Oversight matrix** — the *highest* dimension wins:
-
-| Combination | Oversight Level | What Happens |
-|---|---|---|
-| All low | **Autonomous** | Proceed without checkpoints. Post-hoc review via run record. |
-| Any medium, none high | **Checkpoint** | Proceed, but pause at phase gates for operator confirmation. |
-| Any high | **Supervised** | Require approved plan before source mutations. Log incidents on deviation. |
-
-**Escalation triggers** (move oversight UP regardless of risk):
-- 2+ fix attempts exhausted → escalate to supervised
-- Files outside owned_paths → escalate to supervised
-- Ambiguous acceptance criteria → escalate to checkpoint minimum
-- Prior incident on same component → escalate one level
-
-**De-escalation** (move oversight DOWN with evidence):
-- Approved plan exists → high-risk can proceed as checkpoint
-- 3+ consecutive successful sessions on same component → eligible for autonomous
-
-See `docs/oversight-matrix.md` for the full reference with examples.
-
-## What Hooks Enforce (don't duplicate in prose)
-- Git guard: no commits to main, no force-push, no reset --hard (fail-closed, no jq dependency)
-- Fix-attempt tracker: blocks after 2 source mutations (Edit/Write) without running tests; resets on test run. Compound budget tracks total mutations per phase (low=15, medium=7, high=4); resets on `budget-reset`
-- Risk classifier: reads task risk level (low/medium/high), blocks high-risk source mutations without approved plan
-- Blast radius: cross-references Edit/Write paths against active task's section contract owned_paths; blocks out-of-scope mutations when section is assigned
-- State snapshot: branch, commit, tasks, modified files persisted at session end (valid JSON via Python)
-- Audit run record: warns if no run record written during session
-- Build integrity: warns (does not block) when editing infrastructure files (hooks, CI, packaging, settings, Dockerfiles, release scripts, .gitignore)
-- Langfuse trace: session metrics sent to Langfuse (when configured)
-
-## What's NOT Enforced by Hooks (still important)
-- Update `.agent/tasks.jsonl` with status of touched tasks
-- Append run record to `.agent/runs.jsonl` on task completion
-- Log incidents to `.agent/incidents.jsonl` on failure
-- File eval cases for recurring failure patterns
-- Log trigger misses to `.agent/trigger-misses.jsonl` when no trigger table entry matches the task input (feeds P6 LLM fallback classifier)
 
 ## Project Isolation
 THE_FACTORY is the pipeline/process repo. **Project source code must never be tracked by this repo.** Each project under `projects/` has its own git repo and its own CLAUDE.md. The `.gitignore` enforces this — do not override it. If you need to reference project structure in pipeline docs, use generic examples, not real project paths or content.
@@ -114,7 +80,7 @@ Projects with sufficient complexity should be divided into **sections** — isol
 
 ## Eval Suite
 Run: `.venv/bin/python -m pytest evals/ -v`
-~73 tests: conventions (including section boundary enforcement), flows (including hook tests), handoffs (including task closure), mining regressions, behavioral checks.
+~98 tests: conventions (including section boundary enforcement), flows (including hook tests), handoffs (including task closure), mining regressions, behavioral checks.
 SCUE-specific tests auto-skip when /projects absent.
 
 ## Workspace Layout
@@ -156,7 +122,13 @@ Output: `.agent/reports/token-dashboard.html` (open in browser)
 - **Filter bar**: recency (Last 10 / 24h / 7d / 30d / All) + project dropdown, persists across all tabs
 
 ## Version
-- **Current:** v2.1.0 (2026-03-23)
-- **Previous:** v2.0 → v1.9.2 → v1.9 → v1.8 (archived in `support/`)
-- **Migration plan:** `.claude/plans/v2-migration.md`
+- **Current:** v3.0.0 (2026-03-27)
+- **Previous:** v2.1.1 → v2.1.0 → v2.0 → v1.9.2 → v1.9 → v1.8 (archived in `support/`)
+- **v3.0 changelog:** 44 improvements from consolidated research (12 proposals, Claude + GPT). Risk classifier, blast radius, circuit breaker, compound error budget, pre-flight checks, oversight matrix, pipeline SLOs, CI workflows, JSON schemas, ADRs, artifact taxonomy, portable hooks, doctor script, standalone experiments, context efficiency. See `.claude/plans/v22-consolidated-improvement-plan.md`.
 - **Mining results:** `support/v2/conversation-mining-results.md`
+
+## Critical Reminders (recency-anchored)
+- **Run record required.** Every session that completes work MUST write a run record before ending.
+- **2-attempt cap.** After 2 failed fix attempts, STOP and escalate. Do not iterate blindly.
+- **Single-writer model.** All Edit/Write stays in the main agent. Subagents are read-only.
+- **Context gate.** If turn count exceeds 40 or context feels degraded (forgotten paths, repeated reads), end the session with a handoff snapshot. Fresh context beats loaded context.

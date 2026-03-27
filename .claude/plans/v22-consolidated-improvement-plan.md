@@ -1,8 +1,8 @@
-# v2.2 Consolidated Improvement Plan
+# v3.0 Consolidated Improvement Plan
 
-**Date:** 2026-03-26
-**Branch:** v2.2
-**Status:** Approved — master backlog for next version
+**Date:** 2026-03-26 (created), 2026-03-27 (completed)
+**Branch:** v3.0
+**Status:** COMPLETE — 44/44 net-new tasks shipped. 9 pre-existing tasks remain pending (tf-011–014, tf-028–030, tinyshop-designer, tinyshop-phase1).
 **Sources:** 12 plan/proposal files (Claude + GPT), v2.2 compass analysis, existing tasks.jsonl
 
 ---
