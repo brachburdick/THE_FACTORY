@@ -1,0 +1,20 @@
+{
+  "decisions": [
+    "Restructured CLAUDE.md: Session Protocol + Oversight Policy + Hooks at top (primacy), Critical Reminders at bottom (recency). Trigger table and workspace layout moved to middle.",
+    "Renamed 'Subagent Guidance' to 'Subagent Policy' in all 3 flow skills — now explicitly enforces single-writer model (main agent writes, subagents read-only)",
+    "State snapshot now filters out pending tasks — only includes in_progress and blocked. Pending tasks remain in tasks.jsonl but don't consume context.",
+    "Added session-knowledge.json as a handoff API between sessions — decisions, key_locations, dead_ends, open_questions"
+  ],
+  "key_locations": {
+    "context_gate_sections": "All 3 flow skills under '## Context Gate'",
+    "critical_reminders": "CLAUDE.md bottom section '## Critical Reminders'",
+    "session_knowledge_file": ".agent/session-knowledge.json",
+    "handoff_context_metrics": ".agent/schemas/handoff-envelope.json contextMetrics field"
+  },
+  "dead_ends": [],
+  "open_questions": [
+    "Should context gate be enforced by a hook (deterministic) rather than just skill guidance (prompt-based)?",
+    "Should MEMORY.md support scope tags to filter irrelevant memories at session start?",
+    "tf-030 (context metrics in run records) would close the measurement loop — not implemented yet"
+  ]
+}

@@ -67,6 +67,7 @@ class SessionMetrics:
     tool_token_map: dict = field(default_factory=dict)  # tool -> estimated tokens
     turn_count: int = 0
     mtime: float = 0.0
+    title: str = ""
 
 
 # ---------------------------------------------------------------------------
@@ -127,6 +128,48 @@ def extract_tool_names(content) -> list[str]:
             if isinstance(block, dict) and block.get("type") == "tool_use":
                 tools.append(block.get("name", "unknown"))
     return tools
+
+
+def extract_title(path: Path, max_len: int = 60) -> str:
+    """Extract a conversation title from the first user message."""
+    try:
+        text = path.read_text()
+    except (PermissionError, OSError):
+        return ""
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            entry = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        # queue-operation with content is the earliest user input
+        if entry.get("type") == "queue-operation" and entry.get("operation") == "enqueue":
+            content = entry.get("content", "")
+            if content:
+                # Strip file references like @/path/to/file
+                clean = " ".join(w for w in content.split() if not w.startswith("@/"))
+                clean = clean.replace("\n", " ").strip()
+                return clean[:max_len] + ("…" if len(clean) > max_len else "")
+        # Fallback: first user message
+        if entry.get("type") == "user":
+            msg = entry.get("message", {})
+            content = msg.get("content", entry.get("text", ""))
+            if isinstance(content, str):
+                raw = content
+            elif isinstance(content, list):
+                raw = next(
+                    (b.get("text", "") for b in content
+                     if isinstance(b, dict) and b.get("type") == "text"),
+                    "",
+                )
+            else:
+                raw = str(content)
+            clean = " ".join(w for w in raw.split() if not w.startswith("@/"))
+            clean = clean.replace("\n", " ").strip()
+            return clean[:max_len] + ("…" if len(clean) > max_len else "")
+    return ""
 
 
 def parse_transcript(path: Path, context_size: int) -> list[Turn]:
@@ -270,6 +313,7 @@ def compute_session_metrics(
     turns: list[Turn],
     context_size: int,
     mtime: float,
+    title: str = "",
 ) -> SessionMetrics:
     total_in = 0
     total_out = 0
@@ -321,6 +365,7 @@ def compute_session_metrics(
         tool_token_map=tool_token_map,
         turn_count=len(turns),
         mtime=mtime,
+        title=title,
     )
 
 
@@ -388,6 +433,7 @@ def render_html(
             "tool_token_map": s.tool_token_map,
             "turn_count": s.turn_count,
             "mtime": s.mtime,
+            "title": s.title,
             "turns": s.turns,
         })
 
@@ -407,6 +453,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Token Dashboard — THE_FACTORY</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3"></script>
 <style>
 :root {
   --bg: #0f0f1a;
@@ -772,9 +819,10 @@ function fmt(n) {
   return n.toString();
 }
 function shortId(sid) { return sid.slice(0, 8); }
+function sessionTitle(s) { return s.title || shortId(s.session_id); }
 function sessionLabel(s) {
   const date = s.first_timestamp ? new Date(s.first_timestamp).toLocaleDateString() : "?";
-  return `${shortId(s.session_id)} — ${s.project} — ${date} — ${s.turn_count} turns`;
+  return `${sessionTitle(s)} — ${s.project} — ${date} — ${s.turn_count} turns`;
 }
 
 const COLORS = [
@@ -785,6 +833,42 @@ const COLORS = [
 Chart.defaults.color = "#8892a4";
 Chart.defaults.borderColor = "#1a2744";
 Chart.defaults.plugins.legend.labels.boxWidth = 12;
+
+// ---------- Elapsed time helper ----------
+function elapsedLabel(turns) {
+  if (!turns.length || !turns[0].timestamp) return turns.map((_, i) => `T${i + 1}`);
+  const t0 = new Date(turns[0].timestamp).getTime();
+  return turns.map((t, i) => {
+    if (!t.timestamp) return `T${i + 1}`;
+    const diffMs = new Date(t.timestamp).getTime() - t0;
+    const diffS = Math.round(diffMs / 1000);
+    if (diffS < 60) return `T${i + 1} (${diffS}s)`;
+    if (diffS < 3600) return `T${i + 1} (${Math.round(diffS / 60)}m)`;
+    return `T${i + 1} (${(diffS / 3600).toFixed(1)}h)`;
+  });
+}
+
+// ---------- Context threshold annotations ----------
+const CTX_ANNOTATIONS = {
+  line70: {
+    type: "line", yMin: 70, yMax: 70, borderColor: "#fbbf24", borderWidth: 1.5,
+    borderDash: [6, 4],
+    label: { display: true, content: "70% Cache", position: "end",
+             backgroundColor: "rgba(15,15,26,0.8)", color: "#fbbf24", font: { size: 9 }, padding: 2 },
+  },
+  line90: {
+    type: "line", yMin: 90, yMax: 90, borderColor: "#fb923c", borderWidth: 1.5,
+    borderDash: [6, 4],
+    label: { display: true, content: "90% Compress", position: "end",
+             backgroundColor: "rgba(15,15,26,0.8)", color: "#fb923c", font: { size: 9 }, padding: 2 },
+  },
+  line100: {
+    type: "line", yMin: 100, yMax: 100, borderColor: "#e94560", borderWidth: 2,
+    borderDash: [4, 3],
+    label: { display: true, content: "100% Full", position: "end",
+             backgroundColor: "rgba(15,15,26,0.8)", color: "#e94560", font: { size: 9 }, padding: 2 },
+  },
+};
 
 // ---------- Tab switching ----------
 document.querySelectorAll("nav button").forEach(btn => {
@@ -855,6 +939,7 @@ function destroyChart(c) { if (c) c.destroy(); return null; }
 // ---------- Monitor (multi-session panels) ----------
 const activeSessionIds = new Set();
 const panelCharts = new Map(); // sessionId -> {burn, context, perTurn, tools}
+let sharedBurnMax = 0; // shared Y-max across all active session burn charts
 
 function rebuildToggles() {
   const container = document.getElementById("session-toggles");
@@ -863,7 +948,7 @@ function rebuildToggles() {
     const btn = document.createElement("button");
     btn.className = "session-toggle" + (activeSessionIds.has(s.session_id) ? " active" : "");
     const date = s.first_timestamp ? new Date(s.first_timestamp).toLocaleDateString() : "?";
-    btn.textContent = `${shortId(s.session_id)} (${s.project}, ${date})`;
+    btn.textContent = `${sessionTitle(s)} (${s.project}, ${date})`;
     btn.addEventListener("click", () => {
       if (activeSessionIds.has(s.session_id)) activeSessionIds.delete(s.session_id);
       else activeSessionIds.add(s.session_id);
@@ -894,6 +979,18 @@ function renderPanels() {
     return;
   }
 
+  // Compute shared Y-max for burn rate across all active sessions
+  sharedBurnMax = 0;
+  activeSessions.forEach(s => {
+    let cum = 0;
+    s.turns.forEach(t => {
+      cum += t.input_tokens + t.cache_read_tokens + t.cache_creation_tokens + t.output_tokens;
+    });
+    if (cum > sharedBurnMax) sharedBurnMax = cum;
+  });
+  // Round up to a nice number
+  sharedBurnMax = Math.ceil(sharedBurnMax / 100000) * 100000 || 100000;
+
   activeSessions.forEach(s => {
     const panel = document.createElement("div");
     panel.className = "session-panel";
@@ -901,7 +998,7 @@ function renderPanels() {
     const sid = s.session_id;
     panel.innerHTML = `
       <div class="panel-header">
-        <span class="sid">${shortId(sid)}</span>
+        <span class="sid">${sessionTitle(s)}</span>
         <span class="stat"><b>${s.project}</b></span>
         <span class="stat">${date}</span>
         <span class="stat">In: <b>${fmt(s.total_input_tokens)}</b></span>
@@ -950,7 +1047,7 @@ function renderPanels() {
 function renderPanelCharts(s) {
   const sid = s.session_id;
   const turns = s.turns;
-  const labels = turns.map((_, i) => i);
+  const labels = elapsedLabel(turns);
 
   let cumInput = 0, cumOutput = 0;
   const cumInputData = [], cumOutputData = [];
@@ -978,8 +1075,8 @@ function renderPanelCharts(s) {
       options: {
         responsive: true, maintainAspectRatio: false,
         scales: {
-          x: { title: { display: true, text: "Turn" } },
-          y: { ticks: { callback: v => fmt(v) } },
+          x: { title: { display: true, text: "Turn (elapsed time)" }, ticks: { maxTicksLimit: 10, maxRotation: 45, minRotation: 0 } },
+          y: { max: sharedBurnMax, ticks: { callback: v => fmt(v) }, title: { display: true, text: "Tokens" } },
         },
         plugins: {
           legend: { display: true, position: "top" },
@@ -1000,8 +1097,11 @@ function renderPanelCharts(s) {
       options: {
         responsive: true, maintainAspectRatio: false,
         scales: {
-          x: { title: { display: true, text: "Turn" } },
-          y: { min: 0, suggestedMax: 100 },
+          x: { title: { display: true, text: "Turn (elapsed time)" }, ticks: { maxTicksLimit: 10, maxRotation: 45, minRotation: 0 } },
+          y: { min: 0, max: 100, title: { display: true, text: "Context Window %" } },
+        },
+        plugins: {
+          annotation: { annotations: CTX_ANNOTATIONS },
         },
       },
     }),
@@ -1014,7 +1114,7 @@ function renderPanelCharts(s) {
 function renderExtraCharts(s) {
   const sid = s.session_id;
   const turns = s.turns;
-  const labels = turns.map((_, i) => i);
+  const labels = elapsedLabel(turns);
   const charts = panelCharts.get(sid);
   if (!charts) return;
 
@@ -1033,7 +1133,10 @@ function renderExtraCharts(s) {
     },
     options: {
       responsive: true, maintainAspectRatio: false,
-      scales: { x: { stacked: true }, y: { stacked: true, ticks: { callback: v => fmt(v) } } },
+      scales: {
+        x: { stacked: true, ticks: { maxTicksLimit: 10, maxRotation: 45, minRotation: 0 } },
+        y: { stacked: true, ticks: { callback: v => fmt(v) }, title: { display: true, text: "Tokens per Turn" } },
+      },
     },
   });
 
@@ -1064,7 +1167,7 @@ function renderCompareChips() {
     const chip = document.createElement("span");
     chip.className = "compare-chip" + (compareState.has(s.session_id) ? " selected" : "");
     const date = s.first_timestamp ? new Date(s.first_timestamp).toLocaleDateString() : "?";
-    chip.textContent = `${shortId(s.session_id)} (${s.project}, ${date})`;
+    chip.textContent = `${sessionTitle(s)} (${s.project}, ${date})`;
     chip.addEventListener("click", () => {
       if (compareState.has(s.session_id)) {
         compareState.delete(s.session_id);
@@ -1088,20 +1191,26 @@ function renderCompareCharts() {
     return;
   }
 
+  // Shared Y-max for burn rate comparison
+  let compareBurnMax = 0;
   const burnDatasets = selected.map((s, ci) => {
     let cum = 0;
     const data = s.turns.map(t => {
       cum += t.input_tokens + t.cache_read_tokens + t.cache_creation_tokens + t.output_tokens;
       return cum;
     });
+    if (cum > compareBurnMax) compareBurnMax = cum;
     return {
-      label: `${shortId(s.session_id)} (${s.project})`,
+      label: `${sessionTitle(s)} (${s.project})`,
       data, borderColor: COLORS[ci % COLORS.length], borderWidth: 2, fill: false, pointRadius: 0,
     };
   });
+  compareBurnMax = Math.ceil(compareBurnMax / 100000) * 100000 || 100000;
 
-  const maxLen = Math.max(...selected.map(s => s.turns.length));
-  const labels = Array.from({ length: maxLen }, (_, i) => i);
+  // Use elapsed labels from the longest session
+  const longestSession = selected.reduce((a, b) => a.turns.length >= b.turns.length ? a : b);
+  const maxLen = longestSession.turns.length;
+  const labels = elapsedLabel(longestSession.turns);
 
   destroyChart(compareBurnChart);
   compareBurnChart = new Chart(document.getElementById("chart-compare-burn"), {
@@ -1110,14 +1219,14 @@ function renderCompareCharts() {
     options: {
       responsive: true, maintainAspectRatio: false,
       scales: {
-        x: { title: { display: true, text: "Turn" } },
-        y: { title: { display: true, text: "Cumulative Tokens" }, ticks: { callback: v => fmt(v) } },
+        x: { title: { display: true, text: "Turn (elapsed time)" }, ticks: { maxTicksLimit: 15 } },
+        y: { max: compareBurnMax, title: { display: true, text: "Cumulative Tokens" }, ticks: { callback: v => fmt(v) } },
       },
     },
   });
 
   const ctxDatasets = selected.map((s, ci) => ({
-    label: `${shortId(s.session_id)} (${s.project})`,
+    label: `${sessionTitle(s)} (${s.project})`,
     data: s.turns.map(t => t.role === "assistant" && t.total_context ? (t.total_context / CTX_SIZE * 100) : null),
     borderColor: COLORS[ci % COLORS.length], borderWidth: 2, fill: false, pointRadius: 0, spanGaps: true,
   }));
@@ -1129,8 +1238,11 @@ function renderCompareCharts() {
     options: {
       responsive: true, maintainAspectRatio: false,
       scales: {
-        x: { title: { display: true, text: "Turn" } },
-        y: { title: { display: true, text: "Context %" }, min: 0, suggestedMax: 100 },
+        x: { title: { display: true, text: "Turn (elapsed time)" }, ticks: { maxTicksLimit: 15 } },
+        y: { title: { display: true, text: "Context Window %" }, min: 0, max: 100 },
+      },
+      plugins: {
+        annotation: { annotations: CTX_ANNOTATIONS },
       },
     },
   });
@@ -1299,8 +1411,9 @@ def main() -> None:
         turns = parse_transcript(path, args.context_size)
         if not turns:
             continue
+        title = extract_title(path)
         metrics = compute_session_metrics(
-            sid, project, turns, args.context_size, path.stat().st_mtime
+            sid, project, turns, args.context_size, path.stat().st_mtime, title
         )
         session_metrics.append(metrics)
 

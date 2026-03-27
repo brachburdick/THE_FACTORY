@@ -1,33 +1,6 @@
-# Hey uh
+# THE_FACTORY v3.0 — System Diagram
 
-still working on better docs
-
-you dont have to read all this shit
-
-
-just git clone and tell claude to look at the INIT.md
-
-still working on the agent->human prompt to take action & self-identification of areas needing clarity
-
-
-if you dont know what to do, ask what's next
-
-if you want to understand it better, ask it how the pipeline works
-
-
----
-
-# THE_FACTORY v3.0
-
-A reusable operating system for software projects run with AI agents.
-
-One operator agent. Specialist behavior via skills, not standing roles.
-Deterministic enforcement via Claude Code hooks, not prompt discipline.
-Evals over docs. Hooks enforce, skills inform.
-
----
-
-## How It Works: The Big Picture
+## Level 0: The Big Picture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -50,9 +23,9 @@ Evals over docs. Hooks enforce, skills inform.
            ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                         PROJECT REPOS                                       │
-│     DjTools/scue/     Tinyshop/       PABProject/        CRUCIBLE/         │
-│     (own git)         (own git)        (own git)          (own git)        │
-│     own CLAUDE.md     own CLAUDE.md    own CLAUDE.md      own CLAUDE.md    │
+│     SCUE/        Tinyshop/       PABProject/        CRUCIBLE/              │
+│  (own git)      (own git)        (own git)          (own git)              │
+│  own CLAUDE.md  own CLAUDE.md    own CLAUDE.md      own CLAUDE.md          │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -62,12 +35,12 @@ Projects live under `projects/`, each with their own git repo. THE_FACTORY defin
 
 ---
 
-## Session Lifecycle
+## Level 1: Session Lifecycle (How a Single Work Session Flows)
 
 ```
 ┌──────────────────────── SESSION START ────────────────────────┐
 │                                                               │
-│  1. Load CLAUDE.md (constitution — always loaded first)       │
+│  1. Load CLAUDE.md (constitution)                             │
 │  2. Read .agent/state-snapshot.json (prior session context)   │
 │  3. Read .agent/tasks.jsonl (find pending work)               │
 │  4. Read LEARNINGS.md (env constraints)                       │
@@ -110,10 +83,10 @@ Projects live under `projects/`, each with their own git repo. THE_FACTORY defin
 
 ---
 
-## The Hook System (Automated Guardrails)
+## Level 2: The Hook System (Automated Guardrails)
 
-Hooks are shell scripts wired in `.claude/settings.json`. They fire **automatically**
-before/after tool use. You don't call them. They intercept agent actions and enforce constraints.
+Hooks are shell scripts that fire **automatically** before/after tool use.
+You don't call them. They intercept the agent's actions and enforce constraints.
 
 ```
   Agent tries to Edit a file
@@ -163,19 +136,25 @@ before/after tool use. You don't call them. They intercept agent actions and enf
 └───────────────────────────────────────────┘
 
 
-  Session ends / Agent stops
+  Session ends
          │
          ▼
-┌────────────────────────────────────────────┐
-│  state-snapshot.py → persists context      │
-│  langfuse-trace.py → metrics to Langfuse   │
-│  audit-run-record.sh → warn if no record   │
-└────────────────────────────────────────────┘
+┌────────────── SessionEnd ─────────────────┐
+│  state-snapshot.py → persists context     │
+└───────────────────────────────────────────┘
+
+  Agent stops (or user stops it)
+         │
+         ▼
+┌────────────────── Stop ───────────────────┐
+│  langfuse-trace.py → metrics to Langfuse  │
+│  audit-run-record.sh → warn if no record  │
+└───────────────────────────────────────────┘
 ```
 
 ---
 
-## The Three Control Loops
+## Level 3: The Three Control Loops
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -233,7 +212,87 @@ before/after tool use. You don't call them. They intercept agent actions and enf
 
 ---
 
-## The Automation Spectrum
+## Level 4: Your Interaction Points (Where You Plug In)
+
+### At THE_FACTORY Level (Pipeline / Process)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                   THINGS YOU DO                                  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  CREATE WORK                                                    │
+│  ├── Add tasks to .agent/tasks.jsonl                           │
+│  ├── Set risk level (low/medium/high)                          │
+│  └── Set priority, project, and description                    │
+│                                                                 │
+│  REVIEW PIPELINE HEALTH                                         │
+│  ├── python scripts/assess.py --last 20                        │
+│  ├── python scripts/token-dashboard.py --last 30               │
+│  ├── Read .agent/runs.jsonl for session outcomes                │
+│  └── Read .agent/incidents.jsonl for problems                  │
+│                                                                 │
+│  TUNE THE SYSTEM                                                │
+│  ├── Edit hook thresholds (budgets, cycle limits)              │
+│  ├── Update CLAUDE.md (constitution changes)                   │
+│  ├── Add/modify skills in .claude/skills/                      │
+│  └── Add evals in evals/ to encode repeated failures           │
+│                                                                 │
+│  RESPOND TO AGENT                                               │
+│  ├── Approve/reject specs (feature-flow Phase 0)               │
+│  ├── Approve/reject plans (high-risk tasks)                    │
+│  ├── Answer escalation questions (2-attempt cap hit)           │
+│  └── Unblock tasks (provide missing info)                      │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### At the Project Level (Building Software)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          HOW A PROJECT SESSION WORKS                             │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  1. You open Claude Code in THE_FACTORY directory               │
+│  2. CLAUDE.md loads → agent knows all rules                     │
+│  3. Agent reads tasks.jsonl → picks a task for your project     │
+│  4. Agent cd's into projects/YourProject/                       │
+│  5. Agent loads project's own CLAUDE.md for project context     │
+│  6. Agent classifies task → loads appropriate flow skill        │
+│                                                                 │
+│  DURING THE SESSION:                                            │
+│                                                                 │
+│  ┌──────────────────────────────────────────────────────┐       │
+│  │              Agent works autonomously                │       │
+│  │                                                      │       │
+│  │  • Reads code, runs tests, makes edits              │       │
+│  │  • Hooks silently enforce guardrails                │       │
+│  │  • Agent stays within owned_paths (blast radius)    │       │
+│  │  • Budget tracker counts mutations                  │       │
+│  │                                                      │       │
+│  │         ┌─────────────────────────┐                 │       │
+│  │         │  AGENT PAUSES WHEN:    │                 │       │
+│  │         │                        │                 │       │
+│  │         │  • Spec needs approval │ ◄── You confirm │       │
+│  │         │  • Plan needs approval │ ◄── You confirm │       │
+│  │         │  • 2 attempts failed   │ ◄── You guide   │       │
+│  │         │  • Missing info        │ ◄── You provide │       │
+│  │         │  • Ambiguous request   │ ◄── You clarify │       │
+│  │         └─────────────────────────┘                 │       │
+│  │                                                      │       │
+│  │  Agent closes: run record, commit, update task      │       │
+│  └──────────────────────────────────────────────────────┘       │
+│                                                                 │
+│  SESSION ENDS → state snapshot auto-saved → next session        │
+│  can resume exactly where this one left off                     │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Level 5: The Automation Spectrum
 
 ```
 FULLY AUTOMATIC ◄──────────────────────────────────────► FULLY MANUAL
@@ -262,64 +321,7 @@ FULLY AUTOMATIC ◄────────────────────�
 
 ---
 
-## Your Interaction Points
-
-### At THE_FACTORY Level (Pipeline / Process)
-
-| You want to... | Do this |
-|---|---|
-| **Add work** | Append to `.agent/tasks.jsonl` with id, summary, risk, project |
-| **Start a session** | Open Claude Code in THE_FACTORY dir. Agent picks up from state-snapshot |
-| **Guide mid-session** | Respond when agent asks (spec approval, plan approval, escalation) |
-| **Check progress** | Read `.agent/runs.jsonl` or `python scripts/assess.py --last 20` |
-| **See token costs** | `python scripts/token-dashboard.py --last 30` then open the HTML |
-| **Tighten guardrails** | Edit hook scripts in `.claude/hooks/` (thresholds, budgets) |
-| **Add a new rule** | If deterministic: hook. If behavioral: skill. If test: eval |
-| **Fix recurring failure** | Write an eval in `evals/` so it never regresses |
-| **Change process** | Edit `CLAUDE.md` (the constitution — agent reads it first every session) |
-| **Add a project** | `mkdir projects/NewProject && cd projects/NewProject && git init` |
-| **Review pipeline** | `python scripts/assess.py --last 20` for waste%, success rate |
-
-### At the Project Level (Building Software)
-
-```
-  1. You open Claude Code in THE_FACTORY directory
-  2. CLAUDE.md loads → agent knows all rules
-  3. Agent reads tasks.jsonl → picks a task for your project
-  4. Agent cd's into projects/YourProject/
-  5. Agent loads project's own CLAUDE.md for project context
-  6. Agent classifies task → loads appropriate flow skill
-
-  DURING THE SESSION:
-
-  ┌──────────────────────────────────────────────────────┐
-  │              Agent works autonomously                │
-  │                                                      │
-  │  • Reads code, runs tests, makes edits              │
-  │  • Hooks silently enforce guardrails                │
-  │  • Agent stays within owned_paths (blast radius)    │
-  │  • Budget tracker counts mutations                  │
-  │                                                      │
-  │         ┌─────────────────────────┐                 │
-  │         │  AGENT PAUSES WHEN:    │                 │
-  │         │                        │                 │
-  │         │  • Spec needs approval │ ◄── You confirm │
-  │         │  • Plan needs approval │ ◄── You confirm │
-  │         │  • 2 attempts failed   │ ◄── You guide   │
-  │         │  • Missing info        │ ◄── You provide │
-  │         │  • Ambiguous request   │ ◄── You clarify │
-  │         └─────────────────────────┘                 │
-  │                                                      │
-  │  Agent closes: run record, commit, update task      │
-  └──────────────────────────────────────────────────────┘
-
-  SESSION ENDS → state snapshot auto-saved → next session
-  can resume exactly where this one left off
-```
-
----
-
-## Data Flow Between Sessions
+## Level 6: Data Flow Between Sessions
 
 ```
   Session N                          Session N+1
@@ -347,65 +349,18 @@ FULLY AUTOMATIC ◄────────────────────�
 
 ---
 
-## Root Files
+## Quick Reference: What To Do When
 
-| File | Purpose |
-|------|---------|
-| `CLAUDE.md` | Constitution: core principles, trigger table, flow routing, session protocol |
-| `INIT.md` | Onboarding: routes a fresh agent into the current model |
-| `LEARNINGS.md` | Environment constraints and gotchas |
-| `SYNTROPY.md` | 8 convergent principles for structured decomposition |
-
-## Workspace Layout
-
-```
-THE_FACTORY/
-├── CLAUDE.md              ← constitution (hot, always loaded)
-├── INIT.md                ← onboarding entry point
-├── .agent/
-│   ├── tasks.jsonl        ← work queue
-│   ├── runs.jsonl         ← run telemetry ledger
-│   ├── incidents.jsonl    ← structured incident log
-│   ├── state-snapshot.json← session continuity (written by hook)
-│   ├── evals/             ← eval specs (.eval.md)
-│   ├── reports/           ← generated dashboards (token-dashboard.html)
-│   └── schemas/           ← JSON schemas
-├── .claude/
-│   ├── hooks/             ← deterministic enforcement
-│   ├── settings.json      ← hook wiring
-│   ├── skills/            ← flow skills (debug, feature, refactor)
-│   └── plans/             ← migration plans
-├── evals/                 ← executable eval suite (pytest)
-├── scripts/               ← assess.py, token-dashboard.py, experiment.py
-├── skills/                ← portfolio-level domain skills
-├── projects/
-│   ├── CRUCIBLE/
-│   ├── DjTools/scue/      ← SCUE (Pro DJ Link analysis)
-│   ├── Tinyshop/          ← Pipeline web UI
-│   ├── PABProject/
-│   └── ...
-├── templates/             ← spec, plan, handoff, tasks
-└── support/               ← archives, research, migration docs
-```
-
-## Quick Start
-
-1. **Human:** Read this file.
-2. **Fresh agent:** Give it `INIT.md`. It routes into the current model.
-3. **New project:** Use `skills/project-scaffold/SKILL.md` to scaffold `.agent/`, skills, and project CLAUDE.md.
-4. **Existing project:** Load CLAUDE.md → classify task → load flow skill → execute.
-
-## Improvement Loop
-
-1. Run `scripts/assess.py --last 20` to score recent sessions against baselines
-2. Run `pytest evals/ -v` to check convention/flow drift
-3. Triage improvement candidates (accept/defer/reject)
-4. For accepted improvements: edit the relevant skill or hook, add an eval case, re-run evals
-5. For A/B testing: create a variant YAML, run with `scripts/experiment.py`
-
-## Version
-
-- **Current:** v3.0.0 (2026-03-27)
-- **Previous:** v2.1.1 → v2.1.0 → v2.0 → v1.9.2 → v1.9 → v1.8 (archived in `support/`)
-- **v3.0 changelog:** `.claude/plans/v22-consolidated-improvement-plan.md`
-- **Mining results:** `support/v2/conversation-mining-results.md`
+| You want to... | Do this |
+|---|---|
+| **Add work** | Append to `.agent/tasks.jsonl` with id, summary, risk, project |
+| **Start a session** | Open Claude Code in THE_FACTORY. Agent picks up from state-snapshot |
+| **Guide mid-session** | Respond when agent asks (spec approval, plan approval, escalation) |
+| **Check progress** | Read `.agent/runs.jsonl` or `python scripts/assess.py --last 20` |
+| **See token costs** | `python scripts/token-dashboard.py --last 30` then open the HTML |
+| **Tighten guardrails** | Edit hook scripts in `.claude/hooks/` (thresholds, budgets) |
+| **Add a new rule** | If deterministic → hook. If behavioral → skill. If test → eval |
+| **Fix recurring failure** | Write an eval in `evals/` so it never regresses |
+| **Change process** | Edit `CLAUDE.md` (it's the constitution — agent reads it first) |
+| **Add project** | `mkdir projects/NewProject && cd projects/NewProject && git init` |
+| **Review pipeline** | `python scripts/assess.py --last 20` → look at waste%, success rate |

@@ -252,9 +252,9 @@ class TestNoPrintStatements:
         for f in scue_python_files:
             if f.name.startswith("test_"):
                 continue  # print in tests is fine
-            # CLI tools, scripts, and eval harnesses legitimately use print
+            # CLI tools, scripts, hooks, and eval harnesses legitimately use print
             rel = str(f)
-            if "/tools/" in rel or "/scripts/" in rel or "eval_" in f.name:
+            if "/tools/" in rel or "/scripts/" in rel or "/hooks/" in rel or "eval_" in f.name:
                 continue
             # Standalone debug/diagnostic scripts
             if f.name in ("prodjlink.py", "fix-python-cmd.py"):

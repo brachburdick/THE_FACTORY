@@ -56,65 +56,12 @@ if echo "$FILE_PATH" | grep -qE '(test_|_test\.|/tests/|/evals/|\.test\.|spec\.)
   exit 0
 fi
 
+HOOK_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
 
-# Find tasks file
-TASKS_FILE=""
-if [ -f ".agent/tasks.jsonl" ]; then
-  TASKS_FILE=".agent/tasks.jsonl"
-elif [ -f "$PROJECT_DIR/.agent/tasks.jsonl" ]; then
-  TASKS_FILE="$PROJECT_DIR/.agent/tasks.jsonl"
-fi
-
-# No tasks file → default to medium (allow)
-if [ -z "$TASKS_FILE" ] || [ ! -f "$TASKS_FILE" ]; then
-  exit 0
-fi
-
-# Determine risk level of active task
-RISK=$(python3 -c "
-import json, re, sys
-
-HIGH_KEYWORDS = re.compile(r'(security|migration|schema|auth|credentials|cross-section|destructive|irreversible)', re.I)
-LOW_KEYWORDS = re.compile(r'^(test|doc|config|lint|typo|frontmatter|license|readme)', re.I)
-
-tasks_file = sys.argv[1]
-
-with open(tasks_file) as f:
-    for line in f:
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            task = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if task.get('status') != 'in_progress':
-            continue
-
-        # Explicit risk field takes precedence
-        risk = task.get('risk')
-        if risk in ('low', 'medium', 'high'):
-            print(risk)
-            sys.exit(0)
-
-        # Infer from task content
-        text = task.get('summary', '') + ' ' + task.get('description', '')
-        task_type = task.get('taskType', '')
-
-        if HIGH_KEYWORDS.search(text):
-            print('high')
-            sys.exit(0)
-        if LOW_KEYWORDS.match(task_type) or LOW_KEYWORDS.match(text.strip()):
-            print('low')
-            sys.exit(0)
-
-        print('medium')
-        sys.exit(0)
-
-# No in_progress task → medium
-print('medium')
-" "$TASKS_FILE" 2>/dev/null)
+# Determine risk level of active task via canonical reader
+RISK=$(python3 "$HOOK_DIR/task-reader.py" --active --field risk --infer-risk 2>/dev/null)
+RISK="${RISK:-medium}"
 
 # Low risk → always allow (skip plan-gate too)
 if [ "$RISK" = "low" ]; then
@@ -127,47 +74,21 @@ if [ "$RISK" = "medium" ]; then
 fi
 
 # High risk → require approved plan
-# Check if any .claude/plans/*.md exists for the active task
-HAS_PLAN=$(python3 -c "
-import json, re, sys, os
-
-tasks_file = sys.argv[1]
-project_dir = sys.argv[2]
-plan_pattern = re.compile(r'\.claude/plans/[A-Za-z0-9_/-]+\.md')
-
-with open(tasks_file) as f:
-    for line in f:
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            task = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if task.get('status') != 'in_progress':
-            continue
-        text = ' '.join([
-            task.get('summary', ''),
-            task.get('description', ''),
-            task.get('context', ''),
-        ])
-        match = plan_pattern.search(text)
-        if match:
-            plan_path = os.path.join(project_dir, match.group(0))
-            if os.path.exists(plan_path):
-                print('yes')
-                sys.exit(0)
-        # Also check if a plan with the task ID exists
-        task_id = task.get('id', '')
-        if task_id:
-            for name in os.listdir(os.path.join(project_dir, '.claude', 'plans')):
-                if task_id in name and name.endswith('.md'):
-                    print('yes')
-                    sys.exit(0)
-        break
-
-print('no')
-" "$TASKS_FILE" "$PROJECT_DIR" 2>/dev/null)
+# Use canonical reader to get active task ID, then check for plan file
+TASK_ID=$(python3 "$HOOK_DIR/task-reader.py" --active --field id 2>/dev/null)
+HAS_PLAN="no"
+if [ -n "$TASK_ID" ]; then
+  # Check if a plan file with the task ID exists in .claude/plans/
+  PLANS_DIR="${PROJECT_DIR}/.claude/plans"
+  if [ -d "$PLANS_DIR" ]; then
+    for plan_file in "$PLANS_DIR"/*.md; do
+      [ -f "$plan_file" ] || continue
+      case "$(basename "$plan_file")" in
+        *"$TASK_ID"*) HAS_PLAN="yes"; break ;;
+      esac
+    done
+  fi
+fi
 
 if [ "$HAS_PLAN" = "yes" ]; then
   exit 0
@@ -183,4 +104,6 @@ echo "Either:" >&2
 echo "  1. Use EnterPlanMode to draft and get approval for a plan" >&2
 echo "  2. Ask the operator to set risk: medium on the task if risk was misjudged" >&2
 echo "  3. Create a plan file manually at .claude/plans/{task-id}.md" >&2
+python3 "$HOOK_DIR/log-incident.py" --category blocked --severity high \
+  --hook risk-classifier --summary "High-risk mutation blocked: no approved plan for task $TASK_ID" 2>/dev/null || true
 exit 2

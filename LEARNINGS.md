@@ -54,6 +54,16 @@
 - **Agent-only QA catches code bugs but misses UX bugs.** An agent verifying via snapshots/network requests will confirm "the POST returned 200" and "the progress panel rendered." It will NOT notice: selection not clearing, progress appearing frozen for single-track scans, shift-click not working, scroll wheel affecting the page, confusing labels, or missing visual feedback. These require a human tester with explicit expected-behavior criteria. Interactive QA (agent asks questions, human reports observations) catches both classes.
 - **Experiment: define UX interactions BEFORE development.** For every interactive element, write down what happens on click, hover, shift-click, scroll, drag, keyboard nav — plus every state transition (loading, success, error, empty, recovery). Use this as the source of truth for both implementation AND QA (the spec becomes the QA checklist verbatim). Hypothesis: 30 minutes of UX spec up front saves hours of bug-fix-retest cycles. This approach should be trialed on the next feature build and evaluated. When the interaction spec is unclear, ask the operator before development, not after QA finds gaps.
 
+## Escape Hatches (when governance blocks you)
+
+- **Fix-attempt cap (2 consecutive edits):** Run tests via Bash (pytest, npm test, etc.) to reset.
+- **Compound budget exhausted (10 mutations):** Run `echo budget-reset` via Bash after operator approval.
+- **Circuit breaker (edit-test spiral or drift):** Same — `echo budget-reset` resets all state.
+- **Risk-classifier blocking (high-risk, no plan):** Create a plan file at `.claude/plans/{task-id}.md`, or ask operator to set `risk: medium` on the task.
+- **Blast-radius blocking (out-of-scope file):** Update the task's `section` field, or file a separate task for the out-of-scope change.
+- **Build-integrity warning:** Acknowledge and proceed — it's a warning, not a block.
+- **All state files** are in `.claude/hooks/fix-attempt-tracker.state` (gitignored). Deleting it resets everything.
+
 ## Shell Scripting in Hooks
 
 - **No jq dependency.** All hooks use `python3 -c` for JSON parsing.

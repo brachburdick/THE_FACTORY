@@ -29,8 +29,8 @@
     },
     "result": {
       "type": "string",
-      "enum": ["success", "partial", "failed", "blocked"],
-      "description": "Outcome of the run"
+      "enum": ["success", "partial", "failed", "blocked", "escalated"],
+      "description": "Outcome of the run. 'escalated' = operator took over after agent was blocked."
     },
     "summary": {
       "type": "string",

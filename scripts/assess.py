@@ -226,17 +226,24 @@ def compute_slos(count: int = 20) -> dict[str, Any]:
     if not runs_file.exists():
         return {}
 
-    runs = []
+    runs_raw = []
     for line in runs_file.read_text().splitlines():
         line = line.strip()
         if line:
             try:
-                runs.append(json.loads(line))
+                runs_raw.append(json.loads(line))
             except json.JSONDecodeError:
                 continue
 
-    # Take last N runs
-    runs = runs[-count:]
+    # Deduplicate by run_id (last entry wins, same as JSONL append semantics)
+    seen_ids: dict[str, dict] = {}
+    for r in runs_raw:
+        rid = r.get("run_id", "")
+        if rid:
+            seen_ids[rid] = r
+        else:
+            seen_ids[f"_anon_{len(seen_ids)}"] = r
+    runs = list(seen_ids.values())[-count:]
     if not runs:
         return {}
 
@@ -280,13 +287,21 @@ def compute_slos(count: int = 20) -> dict[str, Any]:
     }
 
     # 4. Test-Gate Failure Rate: % with evals_failed > 0
-    test_fail_count = sum(1 for r in runs if (r.get("evals_failed") or 0) > 0)
-    test_fail_rate = round(test_fail_count / total * 100, 1)
+    # Only count runs that actually report eval data (missing ≠ 0)
+    runs_with_eval_data = [r for r in runs if "evals_failed" in r and not r.get("backfilled")]
+    runs_missing_eval_data = total - len(runs_with_eval_data)
+    test_fail_count = sum(1 for r in runs_with_eval_data if (r.get("evals_failed") or 0) > 0)
+    test_fail_rate = round(test_fail_count / len(runs_with_eval_data) * 100, 1) if runs_with_eval_data else 0.0
+    test_gate_status = "met" if test_fail_rate <= 5.0 else "missed"
+    if runs_missing_eval_data > len(runs_with_eval_data):
+        test_gate_status = "insufficient_data"
     slos["test_gate_failure_rate"] = {
         "value": test_fail_rate,
         "target": 5.0,
         "unit": "%",
-        "status": "met" if test_fail_rate <= 5.0 else "missed",
+        "status": test_gate_status,
+        "sample_size": len(runs_with_eval_data),
+        "missing_data": runs_missing_eval_data,
     }
 
     # 5. Operator Review Latency (if data exists, tf-053)

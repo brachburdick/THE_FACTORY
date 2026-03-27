@@ -13,7 +13,7 @@
                "investigation", "documentation", "config-infra"],
       "description": "Determines which flow skill the receiving agent loads"
     },
-    "summary": { "type": "string", "maxLength": 500 },
+    "summary": { "type": "string", "maxLength": 500, "description": "Condensed findings — aim for 1-2K tokens total handoff, not raw exploration dumps" },
     "artifacts": {
       "type": "array",
       "items": { "type": "string" }
@@ -59,6 +59,15 @@
         }
       },
       "description": "Assumptions accepted for this dispatch"
+    },
+    "contextMetrics": {
+      "type": "object",
+      "description": "Token efficiency metrics for the handoff",
+      "properties": {
+        "tokensExplored": { "type": "integer", "description": "Estimated tokens consumed during exploration" },
+        "tokensHandedOff": { "type": "integer", "description": "Estimated tokens in this handoff document (target: under 2000)" },
+        "compressionRatio": { "type": "number", "description": "tokensExplored / tokensHandedOff — higher is better" }
+      }
     }
   },
   "additionalProperties": false

@@ -7,20 +7,15 @@
 #
 # Layer 2 — Compound error budget (middle loop, tf-026):
 #   Total source mutations this phase, regardless of test resets.
-#   Budget depends on task risk level (reads from tasks.jsonl):
-#     low    → 15 mutations
-#     medium → 7 mutations
-#     high   → 4 mutations
+#   Universal budget: 10 mutations (simplified from per-risk tiers).
 #   When budget is exhausted → block with checkpoint message.
 #   Resets on: budget-reset Bash command, or state file deletion.
 #
 # Layer 3 — Circuit breaker (tf-050):
-#   Regression/spiral signal: test_cycles tracks how many edit-test cycles have
-#     occurred. If cycles reach threshold (low=5, medium=3, high=2) → halt.
-#     Indicates an edit-test spiral without convergence.
-#   Drift signal: tracks unique files modified. If count exceeds threshold
-#     (low=12, medium=8, high=5) → halt. Indicates scope creep.
-#   Error chain: deferred to PostToolUse (not detectable in PreToolUse).
+#   Regression/spiral signal: test_cycles tracks edit-test cycles.
+#     Universal threshold: 4 cycles → halt.
+#   Drift signal: tracks unique files modified.
+#     Universal threshold: 10 files → halt.
 #
 # State file format (4 lines):
 #   Line 1: mutations_since_test (fix-attempt counter)
@@ -91,93 +86,33 @@ count_files() {
   fi
 }
 
-# ── Helper: add file to modified set ──
+# ── Helper: add file to modified set (repo-relative paths for accurate drift) ──
 add_file() {
   local fp="$1"
-  # Extract just the filename for brevity
-  local basename
-  basename=$(basename "$fp")
-  if [ -z "$MODIFIED_FILES" ]; then
-    MODIFIED_FILES="$basename"
-  elif ! echo ",$MODIFIED_FILES," | grep -qF ",$basename,"; then
-    MODIFIED_FILES="$MODIFIED_FILES,$basename"
-  fi
-}
-
-# ── Helper: get risk level from tasks.jsonl ──
-get_risk() {
-  local tasks_file=""
+  # Use repo-relative path for accurate drift tracking (basename collisions are real)
+  local rel_path
   local project_dir="${CLAUDE_PROJECT_DIR:-.}"
-  if [ -f ".agent/tasks.jsonl" ]; then
-    tasks_file=".agent/tasks.jsonl"
-  elif [ -f "$project_dir/.agent/tasks.jsonl" ]; then
-    tasks_file="$project_dir/.agent/tasks.jsonl"
+  rel_path=$(python3 -c "
+import os, sys
+fp = sys.argv[1]
+root = sys.argv[2]
+try:
+    print(os.path.relpath(fp, root))
+except ValueError:
+    print(os.path.basename(fp))
+" "$fp" "$project_dir" 2>/dev/null)
+  rel_path="${rel_path:-$(basename "$fp")}"
+  if [ -z "$MODIFIED_FILES" ]; then
+    MODIFIED_FILES="$rel_path"
+  elif ! echo ",$MODIFIED_FILES," | grep -qF ",$rel_path,"; then
+    MODIFIED_FILES="$MODIFIED_FILES,$rel_path"
   fi
-  if [ -z "$tasks_file" ] || [ ! -f "$tasks_file" ]; then
-    echo "medium"
-    return
-  fi
-  python3 -c "
-import json, re, sys
-
-HIGH_KW = re.compile(r'(security|migration|schema|auth|credentials|cross-section|destructive|irreversible)', re.I)
-LOW_KW = re.compile(r'^(test|doc|config|lint|typo|frontmatter|license|readme)', re.I)
-
-with open(sys.argv[1]) as f:
-    for line in f:
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            task = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if task.get('status') != 'in_progress':
-            continue
-        risk = task.get('risk')
-        if risk in ('low', 'medium', 'high'):
-            print(risk)
-            sys.exit(0)
-        text = task.get('summary', '') + ' ' + task.get('description', '')
-        task_type = task.get('taskType', '')
-        if HIGH_KW.search(text):
-            print('high')
-            sys.exit(0)
-        if LOW_KW.match(task_type) or LOW_KW.match(text.strip()):
-            print('low')
-            sys.exit(0)
-        print('medium')
-        sys.exit(0)
-print('medium')
-" "$tasks_file" 2>/dev/null
 }
 
-# ── Helper: budget threshold for risk level ──
-get_budget() {
-  case "$1" in
-    low)    echo 15 ;;
-    high)   echo 4 ;;
-    *)      echo 7 ;;
-  esac
-}
-
-# ── Helper: cycle threshold for risk level ──
-get_cycle_limit() {
-  case "$1" in
-    low)    echo 5 ;;
-    high)   echo 2 ;;
-    *)      echo 3 ;;
-  esac
-}
-
-# ── Helper: drift file threshold for risk level ──
-get_drift_limit() {
-  case "$1" in
-    low)    echo 12 ;;
-    high)   echo 5 ;;
-    *)      echo 8 ;;
-  esac
-}
+# ── Universal thresholds (simplified from per-risk tiers) ──
+BUDGET_LIMIT=10
+CYCLE_LIMIT=4
+DRIFT_LIMIT=10
 
 # ── Bash: handle resets ──
 if [ "$TOOL_NAME" = "Bash" ]; then
@@ -236,15 +171,14 @@ if [ "$FIX_COUNT" -gt 2 ]; then
   echo "  2. Escalate to the operator with a diagnostic summary" >&2
   echo "" >&2
   echo "To reset: run tests via Bash (pytest, npm test, etc.)" >&2
+  python3 "$HOOK_DIR/log-incident.py" --category blocked --severity medium \
+    --hook fix-attempt-tracker --summary "Fix-attempt cap: $FIX_COUNT consecutive mutations without tests" 2>/dev/null || true
   exit 2
 fi
 
 # ── Check compound error budget (middle loop: total mutations this phase) ──
-RISK=$(get_risk)
-BUDGET=$(get_budget "$RISK")
-
-if [ "$TOTAL_COUNT" -gt "$BUDGET" ]; then
-  echo "BUDGET EXHAUSTED: $TOTAL_COUNT total source mutations (budget: $BUDGET for $RISK-risk task)." >&2
+if [ "$TOTAL_COUNT" -gt "$BUDGET_LIMIT" ]; then
+  echo "BUDGET EXHAUSTED: $TOTAL_COUNT total source mutations (budget: $BUDGET_LIMIT)." >&2
   echo "" >&2
   echo "The compound error budget tracks all source mutations this phase," >&2
   echo "including those between test runs. This prevents edit-test spirals" >&2
@@ -255,13 +189,14 @@ if [ "$TOTAL_COUNT" -gt "$BUDGET" ]; then
   echo "  2. Re-evaluate approach: if you've exceeded budget, the approach may need rethinking" >&2
   echo "" >&2
   echo "To reset after operator approval: run 'echo budget-reset' via Bash" >&2
+  python3 "$HOOK_DIR/log-incident.py" --category blocked --severity medium \
+    --hook fix-attempt-tracker --summary "Budget exhausted: $TOTAL_COUNT mutations (limit $BUDGET_LIMIT)" 2>/dev/null || true
   exit 2
 fi
 
 # ── Circuit breaker: regression/spiral signal ──
-CYCLE_LIMIT=$(get_cycle_limit "$RISK")
 if [ "$TEST_CYCLES" -ge "$CYCLE_LIMIT" ]; then
-  echo "CIRCUIT BREAKER: Edit-test spiral detected ($TEST_CYCLES cycles, limit: $CYCLE_LIMIT for $RISK-risk)." >&2
+  echo "CIRCUIT BREAKER: Edit-test spiral detected ($TEST_CYCLES cycles, limit: $CYCLE_LIMIT)." >&2
   echo "" >&2
   echo "You have gone through $TEST_CYCLES edit→test cycles without completing the task." >&2
   echo "This pattern indicates the current approach may not be converging." >&2
@@ -272,14 +207,15 @@ if [ "$TEST_CYCLES" -ge "$CYCLE_LIMIT" ]; then
   echo "  3. Escalate to the operator if the root cause is unclear" >&2
   echo "" >&2
   echo "To reset after re-evaluation: run 'echo budget-reset' via Bash" >&2
+  python3 "$HOOK_DIR/log-incident.py" --category blocked --severity high \
+    --hook fix-attempt-tracker --summary "Circuit breaker: edit-test spiral ($TEST_CYCLES cycles, limit $CYCLE_LIMIT)" 2>/dev/null || true
   exit 2
 fi
 
 # ── Circuit breaker: drift signal (too many files modified) ──
 FILE_COUNT=$(count_files)
-DRIFT_LIMIT=$(get_drift_limit "$RISK")
 if [ "$FILE_COUNT" -gt "$DRIFT_LIMIT" ]; then
-  echo "CIRCUIT BREAKER: Scope drift detected ($FILE_COUNT unique files modified, limit: $DRIFT_LIMIT for $RISK-risk)." >&2
+  echo "CIRCUIT BREAKER: Scope drift detected ($FILE_COUNT unique files modified, limit: $DRIFT_LIMIT)." >&2
   echo "" >&2
   echo "Modified files: $MODIFIED_FILES" >&2
   echo "" >&2
@@ -293,6 +229,8 @@ if [ "$FILE_COUNT" -gt "$DRIFT_LIMIT" ]; then
   echo "  3. Get operator approval to continue at expanded scope" >&2
   echo "" >&2
   echo "To reset after operator approval: run 'echo budget-reset' via Bash" >&2
+  python3 "$HOOK_DIR/log-incident.py" --category scope_creep --severity medium \
+    --hook fix-attempt-tracker --summary "Drift: $FILE_COUNT files modified (limit $DRIFT_LIMIT)" 2>/dev/null || true
   exit 2
 fi
 

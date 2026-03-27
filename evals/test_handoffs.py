@@ -258,6 +258,51 @@ class TestTaskClosureCompleteness:
             + "\n".join(f"  - {tid}" for tid in missing)
         )
 
+    def test_successful_runs_reference_completed_tasks(self) -> None:
+        """Run records with result=success should reference tasks with status=complete."""
+        tasks_path = AGENT_DIR / "tasks.jsonl"
+        runs_path = AGENT_DIR / "runs.jsonl"
+        if not runs_path.exists() or not tasks_path.exists():
+            pytest.skip("Missing tasks or runs")
+
+        # Build canonical task state (last entry per ID wins)
+        canonical: dict[str, dict] = {}
+        for line in tasks_path.read_text().splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                task = json.loads(line)
+                tid = task.get("id", "")
+                if tid:
+                    canonical[tid] = task
+            except json.JSONDecodeError:
+                continue
+
+        mismatches = []
+        for line in runs_path.read_text().splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                run = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if run.get("result") != "success":
+                continue
+            tid = run.get("task_id", "")
+            if tid and tid in canonical:
+                task_status = canonical[tid].get("status", "")
+                if task_status != "complete":
+                    mismatches.append(
+                        f"run {run.get('run_id', '?')}: result=success but task {tid} status={task_status}"
+                    )
+
+        assert not mismatches, (
+            f"Run records claim success but task is not complete:\n"
+            + "\n".join(f"  - {m}" for m in mismatches)
+        )
+
     def test_run_records_have_summary(self, runs_jsonl: list[dict[str, Any]]) -> None:
         """Every run record must include a non-empty summary field."""
         if not runs_jsonl:

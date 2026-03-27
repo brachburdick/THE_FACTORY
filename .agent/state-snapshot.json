@@ -1,17 +1,30 @@
 {
-  "session_id": "ed058c05-da9d-42af-980c-09f676fb7386",
-  "timestamp": "2026-03-26T18:10:23Z",
+  "session_id": "4cb11bfd-b832-4754-a600-67fc0a21775a",
+  "timestamp": "2026-03-27T00:51:29Z",
   "project_root": "/Users/brach/Documents/THE_FACTORY",
-  "branch": "v2.2",
-  "last_commit": "5ba1e5231c1e6bed1eff72d8b50f33cb87514135 remove old projects",
+  "branch": "v3.0",
+  "last_commit": "d2aad2b6debd698861d8fdc587e08b18dbb3a00a Housekeeping: dedup tasks.jsonl, update docs for v3.0 completion",
   "modified_files": [
+    ".agent/incidents.jsonl",
+    ".agent/reports/token-dashboard.html",
+    ".agent/runs.jsonl",
+    ".agent/schemas/handoff-envelope.json",
+    ".agent/schemas/run.schema.json",
     ".agent/state-snapshot.json",
-    ".agent/tasks.jsonl",
     ".claude/.DS_Store",
+    ".claude/hooks/blast-radius.sh",
+    ".claude/hooks/fix-attempt-tracker.sh",
+    ".claude/hooks/risk-classifier.sh",
+    ".claude/hooks/state-snapshot.py",
+    ".claude/skills/.DS_Store",
+    ".claude/skills/debug-flow/SKILL.md",
+    ".claude/skills/feature-flow/SKILL.md",
+    ".claude/skills/refactor-flow/SKILL.md",
     "LEARNINGS.md",
-    "support/v1.10/conversation-analysis-prompts.md",
-    "support/v1.10/v1.10-execution-instructions.md",
-    "support/v2/improvement-candidates.jsonl"
+    "docs/oversight-matrix.md",
+    "evals/.DS_Store",
+    "evals/__pycache__/test_conventions.cpython-313-pytest-9.0.2.pyc",
+    "evals/__pycache__/test_flows.cpython-313-pytest-9.0.2.pyc"
   ],
   "staged_files": [],
   "active_tasks": [
@@ -28,18 +41,6 @@
       "summary": "SCUE: M7 Event Detection \u2014 spec drafted, awaiting operator approval before implementation. 8 phases: framework, features, heuristic drums, risers/fallers, stabs, storage, RF classifier, training pipeline"
     },
     {
-      "id": "tinyshop-designer",
-      "status": "pending",
-      "taskType": "feature",
-      "summary": "Tinyshop: Designer session for UI tasks (TASK-011, 012, 013, 019) \u2014 App Shell, Dashboard, Launch Drawer, Welcome Screen"
-    },
-    {
-      "id": "tinyshop-phase1",
-      "status": "pending",
-      "taskType": "feature",
-      "summary": "Tinyshop: Phase 1 Foundation \u2014 TASK-001 (scaffold), TASK-002 (types), TASK-003 (SQLite) \u2014 no designer dependency"
-    },
-    {
       "id": "tinyshop-phase2",
       "status": "blocked",
       "taskType": "feature",
@@ -50,73 +51,34 @@
       "status": "blocked",
       "taskType": "feature",
       "summary": "Tinyshop: Phase 3 Frontend \u2014 TASK-011 through TASK-023 (UI components, launch flow, edge cases)"
-    },
-    {
-      "id": "tf-011",
-      "status": "pending",
-      "taskType": "feature",
-      "summary": "Review-cycle skill: encode the three-lens process, session selection, batching, and synthesis as a reusable skill in skills/review-cycle/SKILL.md"
-    },
-    {
-      "id": "tf-012",
-      "status": "pending",
-      "taskType": "refactor",
-      "summary": "Edit() hygiene rule: add guidance to all 3 flow skills \u2014 if >3 sequential Edit() on same file, use Write() instead. Reduces edit-cycling anti-pattern (8/25 sessions)."
-    },
-    {
-      "id": "tf-013",
-      "status": "pending",
-      "taskType": "feature",
-      "summary": "Session scope guideline: add to all 3 flow skills \u2014 cap sessions at 1-2 objectives. Sessions with 4+ objectives consistently score 2-3/5 efficiency."
-    },
-    {
-      "id": "tf-014",
-      "status": "pending",
-      "taskType": "feature",
-      "summary": "Phase handoff prompt template: formalize the handoff-prompt pattern (emergent in sessions 4,8,14) as a template in templates/phase-handoff.md"
-    },
-    {
-      "id": "tf-024",
-      "status": "pending",
-      "taskType": "feature",
-      "summary": "Task risk classifier: add risk field (low/medium/high) to tasks.jsonl schema, PreToolUse hook blocks high-risk edits without approved plan. From human-oversight research."
-    },
-    {
-      "id": "tf-025",
-      "status": "pending",
-      "taskType": "feature",
-      "summary": "Blast radius scope check: PreToolUse hook cross-references Edit/Write paths against active task's section contract, blocks out-of-scope mutations. From human-oversight research."
-    },
-    {
-      "id": "tf-026",
-      "status": "pending",
-      "taskType": "feature",
-      "summary": "Compound error budget: extend fix-attempt-tracker to count total tool calls per phase, checkpoint with operator when budget exhausted (7 steps medium-risk, 4 high-risk). From human-oversight research."
-    },
-    {
-      "id": "tf-027",
-      "status": "pending",
-      "taskType": "feature",
-      "summary": "Pre-flight readiness checks: add mandatory checklist to flow skills \u2014 acceptance criteria, section assignment, risk level, baseline test run, no conflicting tasks. From human-oversight research."
-    },
-    {
-      "id": "tf-028",
-      "status": "pending",
-      "taskType": "feature",
-      "summary": "Interrupt budget tracking: track AskUserQuestion calls and escalations in state snapshot, surface count in session summary. Observability first, caps later. From human-oversight research."
-    },
-    {
-      "id": "tf-029",
-      "status": "pending",
-      "taskType": "feature",
-      "summary": "PR size guardrail: convention eval warns when commits exceed 200 LOC net changes, guidance in feature-flow to split at phase boundaries. From human-oversight research."
-    },
-    {
-      "id": "tf-030",
-      "status": "pending",
-      "taskType": "feature",
-      "summary": "Trust calibration metrics: extend run record schema with operator_interventions, agent_escalations, auto_approved_phases, rework_count. Feed into assess.py trends. From human-oversight research."
     }
   ],
+  "session_friction": {
+    "mutations_since_test": 0,
+    "total_mutations": 0,
+    "test_cycles": 0,
+    "unique_files_modified": 0,
+    "incidents_logged": 79
+  },
+  "session_knowledge": {
+    "decisions": [
+      "Restructured CLAUDE.md: Session Protocol + Oversight Policy + Hooks at top (primacy), Critical Reminders at bottom (recency). Trigger table and workspace layout moved to middle.",
+      "Renamed 'Subagent Guidance' to 'Subagent Policy' in all 3 flow skills \u2014 now explicitly enforces single-writer model (main agent writes, subagents read-only)",
+      "State snapshot now filters out pending tasks \u2014 only includes in_progress and blocked. Pending tasks remain in tasks.jsonl but don't consume context.",
+      "Added session-knowledge.json as a handoff API between sessions \u2014 decisions, key_locations, dead_ends, open_questions"
+    ],
+    "key_locations": {
+      "context_gate_sections": "All 3 flow skills under '## Context Gate'",
+      "critical_reminders": "CLAUDE.md bottom section '## Critical Reminders'",
+      "session_knowledge_file": ".agent/session-knowledge.json",
+      "handoff_context_metrics": ".agent/schemas/handoff-envelope.json contextMetrics field"
+    },
+    "dead_ends": [],
+    "open_questions": [
+      "Should context gate be enforced by a hook (deterministic) rather than just skill guidance (prompt-based)?",
+      "Should MEMORY.md support scope tags to filter irrelevant memories at session start?",
+      "tf-030 (context metrics in run records) would close the measurement loop \u2014 not implemented yet"
+    ]
+  },
   "working_directory": "/Users/brach/Documents/THE_FACTORY"
 }
