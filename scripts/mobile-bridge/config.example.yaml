@@ -1,0 +1,21 @@
+# Mobile Bridge Configuration
+# Copy to config.yaml and fill in your values.
+# config.yaml is gitignored — never commit it.
+
+# Get from @BotFather on Telegram
+telegram_bot_token: "YOUR_BOT_TOKEN_HERE"
+
+# Send /start to your bot, then check:
+#   https://api.telegram.org/bot<TOKEN>/getUpdates
+# Look for "chat": {"id": 123456789}
+telegram_chat_id: 123456789
+
+# Path to THE_FACTORY repo root
+factory_root: "/Users/brach/Documents/THE_FACTORY"
+
+# Notification settings
+notifications:
+  watch_runs: true        # notify on new run records
+  watch_questions: true   # notify on new agent questions
+  watch_plans: true       # notify on new gated plans
+  ci_poll_minutes: 5      # GitHub Actions poll interval (0 = disabled)

@@ -6,6 +6,20 @@
       "runtimeExecutable": "python3",
       "runtimeArgs": ["-m", "http.server", "8099", "--directory", "/Users/brach/Documents/THE_FACTORY/.agent/reports"],
       "port": 8099
+    },
+    {
+      "name": "crucible-api",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["dist/server/serve.js"],
+      "cwd": "/Users/brach/Documents/THE_FACTORY/projects/CRUCIBLE",
+      "port": 3100
+    },
+    {
+      "name": "crucible-ui",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["vite", "--port", "5173"],
+      "cwd": "/Users/brach/Documents/THE_FACTORY/projects/CRUCIBLE/ui",
+      "port": 5173
     }
   ]
 }

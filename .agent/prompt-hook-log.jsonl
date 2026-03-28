@@ -151,3 +151,72 @@
 {"timestamp":"2026-03-27T21:14:13Z","command":".venv/bin/python -m pytest evals/test_handoffs.py::TestRunRecordSchema::test_run_record_task_ids_exist_in_tasks_jsonl -v 2>&1 | grep \","heuristic_risk":"low","patterns":""}
 {"timestamp":"2026-03-27T21:14:46Z","command":".venv/bin/python -m pytest evals/ -v 2>&1 | tail -15","heuristic_risk":"low","patterns":""}
 {"timestamp":"2026-03-27T21:18:07Z","command":".venv/bin/python -m pytest evals/ -v 2>&1 | tail -5","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:21:52Z","command":"ls -la /Users/brach/Documents/THE_FACTORY/projects/CRUCIBLE/ 2>&1 | head -50","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:21:54Z","command":"ls -la /Users/brach/Documents/THE_FACTORY/projects/CRUCIBLE/ui/","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:21:57Z","command":"ls -la /Users/brach/Documents/THE_FACTORY/projects/CRUCIBLE/ui/src/","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:22:01Z","command":"ls -la /Users/brach/Documents/THE_FACTORY/projects/CRUCIBLE/ui/src/pages/","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:22:04Z","command":"ls -la /Users/brach/Documents/THE_FACTORY/projects/CRUCIBLE/src/","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:22:05Z","command":"find /Users/brach/Documents/THE_FACTORY/projects/CRUCIBLE -name \","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:22:07Z","command":"ls -la /Users/brach/Documents/THE_FACTORY/projects/CRUCIBLE/src/server/","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:22:23Z","command":"ls /Users/brach/Documents/THE_FACTORY/projects/CRUCIBLE/.claude/launch.json 2>/dev/null; cat /Users/brach/Documents/THE_FACTORY/projects/CRUCIBLE/.claude/launch.json 2>/dev/null || echo \","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:22:24Z","command":"cd /Users/brach/Documents/THE_FACTORY/projects/CRUCIBLE && cat package.json | python3 -c \","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:22:30Z","command":"cd /Users/brach/Documents/THE_FACTORY/projects/CRUCIBLE/ui && cat package.json | python3 -c \","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:22:31Z","command":"ls /Users/brach/Documents/THE_FACTORY/projects/CRUCIBLE/ui/node_modules/.vite 2>/dev/null; ls /Users/brach/Documents/THE_FACTORY/projects/CRUCIBLE/ui/node_modules 2>/dev/null | head -5","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:22:37Z","command":"ls /Users/brach/Documents/THE_FACTORY/projects/CRUCIBLE/dist/server/serve.js 2>/dev/null && echo \","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:22:42Z","command":"mkdir -p /Users/brach/Documents/THE_FACTORY/.claude","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:23:43Z","command":"lsof -i :3100 2>/dev/null | head -5","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:24:15Z","command":"ls /Users/brach/Documents/THE_FACTORY/projects/CRUCIBLE/ui/src/pages/","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:24:16Z","command":"cd /Users/brach/Documents/THE_FACTORY/projects/CRUCIBLE && git log --oneline -15","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:34:37Z","command":"find /Users/brach/Documents/THE_FACTORY -maxdepth 2 -type f \\( -name \","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:34:40Z","command":"ls -la /Users/brach/Documents/THE_FACTORY/ | grep -E \","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:34:44Z","command":"ls -la /Users/brach/Documents/THE_FACTORY/.claude/hooks/","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:34:44Z","command":"ls -la /Users/brach/Documents/THE_FACTORY/scripts/","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:34:47Z","command":"ls -laR /Users/brach/Documents/THE_FACTORY/ -L -d */ | head -50","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:34:52Z","command":"find . -maxdepth 1 -type d -not -path '.*' | sort","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:34:57Z","command":"find /Users/brach/Documents/THE_FACTORY/projects -maxdepth 2 -type f \\( -name \","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:34:58Z","command":"find /Users/brach/Documents/THE_FACTORY -maxdepth 1 -type d | grep -v \","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:35:01Z","command":"head -20 /Users/brach/Documents/THE_FACTORY/projects/CRUCIBLE/package.json","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:35:07Z","command":"grep -n \","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:35:12Z","command":"head -30 /Users/brach/Documents/THE_FACTORY/.claude/hooks/risk-classifier.sh","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:35:12Z","command":"head -30 /Users/brach/Documents/THE_FACTORY/.claude/hooks/blast-radius.sh","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:35:15Z","command":"head -20 /Users/brach/Documents/THE_FACTORY/evals/test_conventions.py","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:35:18Z","command":"cat /Users/brach/Documents/THE_FACTORY/.gitmodules 2>/dev/null || echo \","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:35:18Z","command":"ls -la /Users/brach/Documents/THE_FACTORY/projects/","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:35:18Z","command":"cat /Users/brach/Documents/THE_FACTORY/.gitignore | head -40","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:35:21Z","command":"head -50 /Users/brach/Documents/THE_FACTORY/scripts/doctor.py","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:35:21Z","command":"head -30 /Users/brach/Documents/THE_FACTORY/scripts/experiment.py","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:35:24Z","command":"ls /Users/brach/Documents/THE_FACTORY/evals/ | head -20","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:35:25Z","command":"wc -l /Users/brach/Documents/THE_FACTORY/evals/*.py","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:35:26Z","command":"find /Users/brach/Documents/THE_FACTORY -name \","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:35:32Z","command":"find /Users/brach/Documents/THE_FACTORY/skills -type f -name \","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:35:32Z","command":"ls -la /Users/brach/Documents/THE_FACTORY/.claude/skills/ 2>/dev/null || echo \","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:35:32Z","command":"head -40 /Users/brach/Documents/THE_FACTORY/.claude/launch.json","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:35:35Z","command":"head -30 /Users/brach/Documents/THE_FACTORY/scripts/install-skill.sh","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:35:36Z","command":"head -30 /Users/brach/Documents/THE_FACTORY/scripts/pack-skill.sh","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:35:38Z","command":"ls -la /Users/brach/Documents/THE_FACTORY/docs/ | head -30","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:35:42Z","command":"grep -r \","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:35:42Z","command":"head -20 /Users/brach/Documents/THE_FACTORY/docs/hook-pipeline.md","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-27T21:35:43Z","command":"wc -c /Users/brach/Documents/THE_FACTORY/pyproject.toml /Users/brach/Documents/THE_FACTORY/.claude/settings.json","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-28T02:57:40Z","command":"find /Users/brach/Documents/THE_FACTORY -name \","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-28T02:57:50Z","command":"ls -la /Users/brach/Documents/THE_FACTORY/.claude/hooks/ 2>/dev/null | head -20","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-28T02:57:57Z","command":"find /Users/brach/Documents/THE_FACTORY/projects/Tinyshop -name \","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-28T03:19:40Z","command":"python3 --version && which python3","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-28T03:19:50Z","command":"ls /Users/brach/Documents/THE_FACTORY/scripts/mobile-bridge/ 2>/dev/null || echo \","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-28T03:19:51Z","command":"pip3 show python-telegram-bot 2>/dev/null || echo \","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-28T03:19:59Z","command":"mkdir -p /Users/brach/Documents/THE_FACTORY/scripts/mobile-bridge/commands","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-28T03:21:56Z","command":".venv/bin/python -m pytest evals/ -x -q --tb=no 2>&1 | tail -5","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-28T03:23:30Z","command":".venv/bin/python -m pytest evals/test_conventions.py -x -q --tb=no 2>&1 | tail -3","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-28T03:24:06Z","command":"grep -n \","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-28T03:24:45Z","command":"pip3 install python-telegram-bot watchdog pyyaml 2>&1 | tail -5","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-28T03:24:53Z","command":"ls /Users/brach/Documents/THE_FACTORY/.venv/bin/python3 && /Users/brach/Documents/THE_FACTORY/.venv/bin/pip install python-telegram-bot watchdog pyyaml 2>&1 | tail -8","heuristic_risk":"high","patterns":"package_management"}
+{"timestamp":"2026-03-28T03:25:00Z","command":"/Users/brach/Documents/THE_FACTORY/.venv/bin/pip install python-telegram-bot watchdog pyyaml","heuristic_risk":"high","patterns":"package_management"}
+{"timestamp":"2026-03-28T03:25:11Z","command":".venv/bin/python -c \","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-28T03:25:19Z","command":"cd /Users/brach/Documents/THE_FACTORY/scripts/mobile-bridge && ../../.venv/bin/python -c \","heuristic_risk":"medium","patterns":"file_modification_or_env"}
+{"timestamp":"2026-03-28T03:25:26Z","command":"cd /Users/brach/Documents/THE_FACTORY/scripts/mobile-bridge && mv commands cmd_handlers","heuristic_risk":"medium","patterns":"file_modification_or_env"}
+{"timestamp":"2026-03-28T03:25:37Z","command":".venv/bin/python -m pytest evals/test_conventions.py -x -q --tb=no 2>&1 | tail -2","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-28T03:25:44Z","command":"cd /Users/brach/Documents/THE_FACTORY && .venv/bin/python -m pytest evals/test_conventions.py -x -q --tb=no 2>&1 | tail -2","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-28T03:26:07Z","command":"cd /Users/brach/Documents/THE_FACTORY/scripts/mobile-bridge && ../../.venv/bin/python -c \","heuristic_risk":"medium","patterns":"file_modification_or_env"}
+{"timestamp":"2026-03-28T03:26:13Z","command":"ls /Users/brach/Documents/THE_FACTORY/scripts/mobile-bridge/cmd_handlers/","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-28T03:26:21Z","command":"ls /Users/brach/Documents/THE_FACTORY/scripts/mobile-bridge/commands/ 2>/dev/null || echo \","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-28T03:26:51Z","command":"cd /Users/brach/Documents/THE_FACTORY/scripts/mobile-bridge && ../../.venv/bin/python -c \","heuristic_risk":"medium","patterns":"file_modification_or_env"}
+{"timestamp":"2026-03-28T03:27:07Z","command":"../../.venv/bin/python -c \","heuristic_risk":"medium","patterns":"file_modification_or_env"}

@@ -17,3 +17,6 @@ __pycache__/
 
 # ── Hook state files (temp tracking) ──
 .claude/hooks/*.state
+
+# ── Mobile bridge secrets ──
+scripts/mobile-bridge/config.yaml
