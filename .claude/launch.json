@@ -20,6 +20,13 @@
       "runtimeArgs": ["vite", "--port", "5173"],
       "cwd": "/Users/brach/Documents/THE_FACTORY/projects/CRUCIBLE/ui",
       "port": 5173
+    },
+    {
+      "name": "taylor-site",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8130"],
+      "cwd": "/Users/brach/Documents/THE_FACTORY/projects/Taylor",
+      "port": 8130
     }
   ]
 }

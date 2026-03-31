@@ -220,3 +220,27 @@
 {"timestamp":"2026-03-28T03:26:21Z","command":"ls /Users/brach/Documents/THE_FACTORY/scripts/mobile-bridge/commands/ 2>/dev/null || echo \","heuristic_risk":"low","patterns":""}
 {"timestamp":"2026-03-28T03:26:51Z","command":"cd /Users/brach/Documents/THE_FACTORY/scripts/mobile-bridge && ../../.venv/bin/python -c \","heuristic_risk":"medium","patterns":"file_modification_or_env"}
 {"timestamp":"2026-03-28T03:27:07Z","command":"../../.venv/bin/python -c \","heuristic_risk":"medium","patterns":"file_modification_or_env"}
+{"timestamp":"2026-03-29T20:31:49Z","command":"mkdir -p /Users/brach/Documents/THE_FACTORY/projects/Taylor && ls /Users/brach/Documents/THE_FACTORY/projects/Taylor","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-29T20:34:35Z","command":"ls -la /Users/brach/Documents/THE_FACTORY/scripts 2>/dev/null; rg -l \","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-29T20:35:03Z","command":".venv/bin/python -m pytest evals/ -v --timeout=30 -x -q 2>&1 | tail -5","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-29T20:35:13Z","command":".venv/bin/python -m pytest evals/ -x -q 2>&1 | tail -10","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-29T20:37:32Z","command":".venv/bin/python -m pytest evals/test_conventions.py -x -q 2>&1 | tail -3","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-29T20:39:02Z","command":".venv/bin/python -m pytest evals/test_conventions.py -x -q 2>&1 | tail -3","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-29T20:40:28Z","command":".venv/bin/python -m pytest evals/test_conventions.py -x -q 2>&1 | tail -3","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-29T20:41:27Z","command":"mkdir -p /Users/brach/Documents/THE_FACTORY/projects/Taylor/images && cd /Users/brach/Documents/THE_FACTORY/projects/Taylor && git init && git add -A && git commit -m \","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-29T20:41:57Z","command":"python3 -m http.server 8123 &","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-29T20:42:04Z","command":"python3 -m http.server 8124 &","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-29T20:42:15Z","command":"python3 -m http.server 8125 &>/dev/null &  echo \","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-29T20:42:29Z","command":"kill 16776 2>/dev/null; python3 -m http.server 8126 &>/dev/null & echo \","heuristic_risk":"high","patterns":"destructive_or_remote"}
+{"timestamp":"2026-03-29T20:42:40Z","command":"python3 -m http.server 8127 &>/dev/null & echo \","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-29T20:42:47Z","command":"python3 -m http.server 8128 &>/dev/null & echo \","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-29T20:42:56Z","command":"python3 -m http.server 8129 &>/dev/null & echo \","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-29T20:43:10Z","command":"curl -s http://localhost:8128/index.html | head -5","heuristic_risk":"medium","patterns":"network_access"}
+{"timestamp":"2026-03-29T20:43:27Z","command":"curl -s -o /dev/null -w \","heuristic_risk":"medium","patterns":"network_access"}
+{"timestamp":"2026-03-29T20:43:34Z","command":"kill 16776 17011 17238 17376 17539 2>/dev/null; (python3 -m http.server 8130 &>/dev/null &) && sleep 1 && curl -s -o /dev/null -w \","heuristic_risk":"high","patterns":"destructive_or_remote"}
+{"timestamp":"2026-03-29T20:43:41Z","command":"python3 -m http.server 8130 &>/dev/null & echo \","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-29T20:44:25Z","command":"ls /Users/brach/Documents/THE_FACTORY/projects/Taylor/.claude/","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-29T20:44:31Z","command":"mkdir -p /Users/brach/Documents/THE_FACTORY/projects/Taylor/.claude","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-29T20:58:28Z","command":".venv/bin/python -m pytest evals/test_conventions.py -x -q 2>&1 | tail -3","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-29T21:00:45Z","command":".venv/bin/python -m pytest evals/test_conventions.py -x -q 2>&1 | tail -3","heuristic_risk":"low","patterns":""}
+{"timestamp":"2026-03-29T21:09:33Z","command":".venv/bin/python -m pytest evals/test_conventions.py -x -q 2>&1 | tail -3","heuristic_risk":"low","patterns":""}
